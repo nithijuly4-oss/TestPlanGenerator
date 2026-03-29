@@ -43,14 +43,17 @@ const connectionStates = {};
 // ============================================
 function runPythonTool(toolPath, args = []) {
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
+    let python;
+    let timeout;
+
+    python = spawn('python', [toolPath, ...args], {
+      cwd: __dirname
+    });
+
+    timeout = setTimeout(() => {
       python.kill('SIGTERM');
       reject(new Error('Python tool timeout - attempting direct API call instead'));
     }, 10000); // 10 second timeout
-
-    const python = spawn('python', [toolPath, ...args], {
-      cwd: __dirname
-    });
 
     let stdout = '';
     let stderr = '';
