@@ -272,7 +272,11 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       : `https://${jiraDomain}.atlassian.net`;
     
     const url = `${baseUrl}/rest/api/3/issues/${issueKey}`;
-    console.log(`Making request to: ${url}`);
+    console.log(`📋 Making Jira request:`);
+    console.log(`   URL: ${url}`);
+    console.log(`   Email: ${email}`);
+    console.log(`   Token length: ${apiToken?.length}`);
+    console.log(`   Token preview: ${apiToken?.substring(0, 10)}...`);
     
     const response = await axios.get(
       url,
@@ -286,6 +290,7 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
     );
 
     const issue = response.data;
+    console.log(`✅ Jira API returned issue: ${issue.key}`);
     
     return {
       status: 'found',
@@ -300,12 +305,13 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       assignee: issue.fields.assignee?.displayName || 'Unassigned'
     };
   } catch (error) {
-    console.error('fetchJiraIssueDirect error:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url
-    });
+    console.error('❌ fetchJiraIssueDirect error:');
+    console.error(`   Status: ${error.response?.status}`);
+    console.error(`   StatusText: ${error.response?.statusText}`);
+    console.error(`   Message: ${error.message}`);
+    if (error.response?.data) {
+      console.error(`   Response Data:`, JSON.stringify(error.response.data));
+    }
     throw error;
   }
 }
@@ -508,24 +514,26 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
       console.log('✅ Jira issue fetched via direct API');
       return res.json(result);
     } catch (directError) {
-      console.error('❌ Direct API error:', {
+      console.error('Direct API error details:', {
         status: directError.response?.status,
         statusText: directError.response?.statusText,
-        errorMessage: directError.message,
-        errorData: directError.response?.data
+        errorMessages: directError.response?.data?.errorMessages,
+        errors: directError.response?.data?.errors
       });
 
       // Handle specific Jira API errors
       if (directError.response?.status === 404) {
-        console.log(`Issue not found: ${req.params.issueKey}`);
+        console.log(`⚠️ Jira returned 404 for issue: ${req.params.issueKey}`);
+        console.log(`   Response: ${JSON.stringify(directError.response.data)}`);
         return res.status(404).json({
           status: 'error',
-          message: `Issue ${req.params.issueKey} not found in Jira. Verify the issue exists and check your Jira domain configuration.`
+          message: `Issue ${req.params.issueKey} not found in Jira. Verify the issue exists and check your Jira domain configuration.`,
+          jiraResponse: directError.response.data
         });
       }
       
       if (directError.response?.status === 401) {
-        console.log('Jira authentication failed - Invalid credentials');
+        console.log('❌ Jira authentication failed - Invalid credentials');
         return res.status(401).json({
           status: 'error',
           message: 'Jira authentication failed. Invalid email or API token.'
@@ -533,7 +541,7 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
       }
 
       if (directError.response?.status === 403) {
-        console.log('Jira access forbidden');
+        console.log('❌ Jira access forbidden');
         return res.status(403).json({
           status: 'error',
           message: 'Jira access forbidden. Your account may not have permission to access this issue.'
