@@ -285,7 +285,7 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
     const issue = response.data;
     
     return {
-      status: 'success',
+      status: 'found',
       issueKey: issue.key,
       title: issue.fields.summary,
       description: issue.fields.description?.content?.[0]?.content?.[0]?.text || 
@@ -465,6 +465,23 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
       console.log('✅ Jira issue fetched via direct API');
       return res.json(result);
     } catch (directError) {
+      // Handle specific Jira API errors
+      if (directError.response?.status === 404) {
+        console.log(`Issue not found: ${req.params.issueKey}`);
+        return res.status(404).json({
+          status: 'error',
+          message: `Issue ${req.params.issueKey} not found in Jira`
+        });
+      }
+      
+      if (directError.response?.status === 401 || directError.response?.status === 403) {
+        console.log('Jira authentication failed');
+        return res.status(401).json({
+          status: 'error',
+          message: 'Jira authentication failed. Please verify your credentials.'
+        });
+      }
+      
       console.log('Direct API call failed, trying Python tool...');
       // Fallback to Python tool
       try {
@@ -480,7 +497,8 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Error:', error.message);
-    res.status(500).json({
+    const statusCode = error.response?.status || 500;
+    res.status(statusCode).json({
       status: 'error',
       message: error.message || 'Failed to fetch Jira issue'
     });
