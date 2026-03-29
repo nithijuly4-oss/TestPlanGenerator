@@ -228,6 +228,41 @@ Generate test plan with these sections (use JSON format):
 }
 
 // ============================================
+// Helper: Test Jira Connection (Direct API)
+// ============================================
+async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
+  try {
+    const baseUrl = jiraDomain.startsWith('http') 
+      ? jiraDomain 
+      : `https://${jiraDomain}.atlassian.net`;
+    
+    const response = await axios.get(
+      `${baseUrl}/rest/api/3/myself`,
+      {
+        auth: {
+          username: email,
+          password: apiToken
+        },
+        timeout: 8000
+      }
+    );
+
+    const user = response.data;
+    
+    return {
+      status: 'connected',
+      provider: 'jira',
+      user: user.emailAddress || user.email || email,
+      displayName: user.displayName || 'Unknown',
+      message: 'Jira API connection successful',
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+// ============================================
 // Helper: Fetch Jira Issue (Direct API)
 // ============================================
 async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
