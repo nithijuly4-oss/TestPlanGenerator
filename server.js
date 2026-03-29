@@ -136,16 +136,95 @@ async function testGroqConnectionDirect(apiKey) {
 }
 
 // ============================================
-// Helper: Test Jira Connection (Direct API)
+// Helper: Create DOCX with python-docx (Direct Node.js)
 // ============================================
-async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
+async function createDocxDirect(issueKey, issueTitle, testPlanSections) {
+  try {
+    // For Vercel, we'll rely on the Python tool via fallback
+    // This is a placeholder for potential pure-JS implementation
+    // Currently, we need Python for DOCX creation, so we return a marker
+    throw new Error('Direct DOCX creation not implemented - using Python fallback');
+  } catch (error) {
+    throw error;
+  }
+}
+  try {
+    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    
+    const prompt = `You are an expert QA engineer. Create a comprehensive test plan for the following issue:
+
+Title: ${issueTitle}
+Description: ${issueDescription}
+${acceptanceCriteria && acceptanceCriteria.length > 0 ? `Acceptance Criteria:\n${acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : ''}
+
+Generate test plan with these sections (use JSON format):
+{
+  "test_scenarios": ["scenario 1", "scenario 2", ...],
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Test case title",
+      "steps": ["step 1", "step 2", ...],
+      "expected_result": "what should happen"
+    }
+  ],
+  "edge_cases": ["edge case 1", ...],
+  "automation_notes": "Automation recommendations"
+}`;
+
+    const response = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      }
+    );
+
+    if (response.data.choices && response.data.choices[0]) {
+      const content = response.data.choices[0].message.content;
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const testPlan = JSON.parse(jsonMatch[0]);
+        return {
+          status: 'success',
+          test_plan: testPlan,
+          message: 'Test plan generated successfully'
+        };
+      }
+      return {
+        status: 'success',
+        test_plan: {
+          description: content
+        },
+        message: 'Test plan generated (unstructured format)'
+      };
+    }
+  } catch (error) {
+    throw error;
+  }
+}
   try {
     const baseUrl = jiraDomain.startsWith('http') 
       ? jiraDomain 
       : `https://${jiraDomain}.atlassian.net`;
     
     const response = await axios.get(
-      `${baseUrl}/rest/api/3/myself`,
+      `${baseUrl}/rest/api/3/issues/${issueKey}`,
       {
         auth: {
           username: email,
@@ -155,16 +234,20 @@ async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
       }
     );
 
-    if (response.data) {
-      return {
-        status: 'connected',
-        provider: 'jira',
-        user: response.data.emailAddress,
-        displayName: response.data.displayName,
-        message: 'Jira Cloud connection successful',
-        timestamp: new Date().toISOString()
-      };
-    }
+    const issue = response.data;
+    
+    return {
+      status: 'success',
+      issueKey: issue.key,
+      title: issue.fields.summary,
+      description: issue.fields.description?.content?.[0]?.content?.[0]?.text || 
+                   issue.fields.description || 
+                   'No description provided',
+      acceptanceCriteria: issue.fields.customfield_10028 || [],
+      priority: issue.fields.priority?.name || 'Medium',
+      status: issue.fields.status?.name || 'To Do',
+      assignee: issue.fields.assignee?.displayName || 'Unassigned'
+    };
   } catch (error) {
     throw error;
   }
@@ -300,27 +383,43 @@ app.get('/api/connections/status', (req, res) => {
 // Fetch Jira Issue
 app.get('/api/jira/issue/:issueKey', async (req, res) => {
   try {
-    if (!connectionStates.jira || connectionStates.jira.status !== 'connected') {
+    const email = process.env.JIRA_EMAIL;
+    const apiToken = process.env.JIRA_API_TOKEN;
+    const jiraDomain = process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
+
+    if (!email || !apiToken || !jiraDomain) {
       return res.status(400).json({
-        error: 'Jira not connected',
-        message: 'Please test Jira connection first'
+        error: 'Jira not configured',
+        message: 'Jira credentials not found in environment variables'
       });
     }
 
     console.log(`📋 Fetching Jira issue: ${req.params.issueKey}`);
-    const result = await runPythonTool(
-      path.join(__dirname, 'tools', 'fetch_jira_issue.py'),
-      [req.params.issueKey]
-    );
 
-    console.log('Jira issue fetch result:', result); // Log the response
-
-    res.json(result);
+    // Try direct API call first (works on Vercel)
+    try {
+      const result = await fetchJiraIssueDirect(req.params.issueKey, email, apiToken, jiraDomain);
+      console.log('✅ Jira issue fetched via direct API');
+      return res.json(result);
+    } catch (directError) {
+      console.log('Direct API call failed, trying Python tool...');
+      // Fallback to Python tool
+      try {
+        const result = await runPythonTool(
+          path.join(__dirname, 'tools', 'fetch_jira_issue.py'),
+          [req.params.issueKey]
+        );
+        console.log('✅ Jira issue fetched via Python tool');
+        return res.json(result);
+      } catch (pythonError) {
+        throw directError; // Throw the direct error if both fail
+      }
+    }
   } catch (error) {
     console.error('❌ Error:', error.message);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Failed to fetch Jira issue'
     });
   }
 });
@@ -328,13 +427,6 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
 // Generate Test Plan
 app.post('/api/test-plan/generate', async (req, res) => {
   try {
-    if (!connectionStates.llm || connectionStates.llm.status !== 'connected') {
-      return res.status(400).json({
-        error: 'LLM not connected',
-        message: 'Please test LLM connection first'
-      });
-    }
-
     const { issueTitle, issueDescription, acceptanceCriteria } = req.body;
 
     if (!issueTitle) {
@@ -346,22 +438,48 @@ app.post('/api/test-plan/generate', async (req, res) => {
 
     console.log(`🧠 Generating test plan for: ${issueTitle}`);
     
-    const args = [issueTitle, issueDescription || 'No description'];
-    if (acceptanceCriteria && Array.isArray(acceptanceCriteria)) {
-      args.push(...acceptanceCriteria);
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({
+        error: 'GROQ not configured',
+        message: 'GROQ_API_KEY not found in environment'
+      });
     }
 
-    const result = await runPythonTool(
-      path.join(__dirname, 'tools', 'generate_test_plan.py'),
-      args
-    );
-    
-    res.json(result);
+    // Try direct API call first (works on Vercel)
+    try {
+      const result = await generateTestPlanDirect(
+        issueTitle,
+        issueDescription || 'No description',
+        acceptanceCriteria,
+        apiKey
+      );
+      console.log('✅ Test plan generated via direct API');
+      return res.json(result);
+    } catch (directError) {
+      console.log('Direct API call failed, trying Python tool...');
+      // Fallback to Python tool
+      try {
+        const args = [issueTitle, issueDescription || 'No description'];
+        if (acceptanceCriteria && Array.isArray(acceptanceCriteria)) {
+          args.push(...acceptanceCriteria);
+        }
+
+        const result = await runPythonTool(
+          path.join(__dirname, 'tools', 'generate_test_plan.py'),
+          args
+        );
+        console.log('✅ Test plan generated via Python tool');
+        return res.json(result);
+      } catch (pythonError) {
+        throw directError; // Throw the direct error if both fail
+      }
+    }
   } catch (error) {
     console.error('❌ Error:', error.message);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Failed to generate test plan'
     });
   }
 });
@@ -373,8 +491,6 @@ app.post('/api/test-plan/create-docx', async (req, res) => {
 
     console.log(`📄 Creating DOCX for: ${issueKey}`);
     console.log(`   Title: ${issueTitle}`);
-    console.log(`   Sections type: ${typeof testPlanSections}`);
-    console.log(`   Sections keys: ${Object.keys(testPlanSections || {}).join(', ')}`);
 
     if (!issueKey || !issueTitle || !testPlanSections) {
       return res.status(400).json({
@@ -385,26 +501,47 @@ app.post('/api/test-plan/create-docx', async (req, res) => {
 
     // Save test plan sections to temp JSON file
     const tempJsonPath = path.join(__dirname, '.tmp', `temp_plan_${Date.now()}.json`);
+    fs.mkdirSync(path.dirname(tempJsonPath), { recursive: true });
     fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
 
-    const result = await runPythonTool(
-      path.join(__dirname, 'tools', 'create_docx_plan.py'),
-      [issueKey, issueTitle, tempJsonPath]
-    );
-
-    // Clean up temp JSON
     try {
-      fs.unlinkSync(tempJsonPath);
-    } catch (e) {
-      console.warn('Could not delete temp JSON file:', e.message);
-    }
+      const result = await runPythonTool(
+        path.join(__dirname, 'tools', 'create_docx_plan.py'),
+        [issueKey, issueTitle, tempJsonPath]
+      );
 
-    res.json(result);
+      // Clean up temp JSON
+      try {
+        fs.unlinkSync(tempJsonPath);
+      } catch (e) {
+        console.warn('Could not delete temp JSON file:', e.message);
+      }
+
+      res.json(result);
+    } catch (pythonError) {
+      // Clean up temp JSON on error
+      try {
+        fs.unlinkSync(tempJsonPath);
+      } catch (e) {
+        console.warn('Could not delete temp JSON file:', e.message);
+      }
+
+      // On Vercel, Python isn't available - this is expected
+      if (process.env.VERCEL) {
+        console.log('⚠️ Running on Vercel - DOCX generation requires local Python');
+        return res.status(503).json({
+          status: 'error',
+          message: 'DOCX generation is not available on serverless environment. Please use download-docx endpoint for streaming.',
+          alternative: 'Use POST /api/test-plan/download-docx for immediate download'
+        });
+      }
+      throw pythonError;
+    }
   } catch (error) {
     console.error('❌ Error:', error.message);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Failed to create DOCX'
     });
   }
 });
@@ -482,54 +619,75 @@ app.post('/api/test-plan/download-docx', async (req, res) => {
 
     // Save test plan sections to temp JSON file
     const tempJsonPath = path.join(__dirname, '.tmp', `temp_plan_${Date.now()}.json`);
+    fs.mkdirSync(path.dirname(tempJsonPath), { recursive: true });
     fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
 
-    // Generate DOCX
-    const result = await runPythonTool(
-      path.join(__dirname, 'tools', 'create_docx_plan.py'),
-      [issueKey, issueTitle, tempJsonPath]
-    );
-
-    // Clean up temp JSON
     try {
-      fs.unlinkSync(tempJsonPath);
-    } catch (e) {
-      console.warn('Could not delete temp JSON file:', e.message);
-    }
+      // Generate DOCX
+      const result = await runPythonTool(
+        path.join(__dirname, 'tools', 'create_docx_plan.py'),
+        [issueKey, issueTitle, tempJsonPath]
+      );
 
-    if (result.status !== 'success' || !result.file_path) {
-      throw new Error(result.message || 'Failed to generate document');
-    }
+      // Clean up temp JSON
+      try {
+        fs.unlinkSync(tempJsonPath);
+      } catch (e) {
+        console.warn('Could not delete temp JSON file:', e.message);
+      }
 
-    // Read the file as buffer and stream directly (Vercel-compatible, no persistent storage)
-    const filePath = result.file_path;
-    if (!fs.existsSync(filePath)) {
-      throw new Error('Generated file not found');
-    }
+      if (result.status !== 'success' || !result.file_path) {
+        throw new Error(result.message || 'Failed to generate document');
+      }
 
-    const fileName = `${issueKey}_TestPlan.docx`;
-    const fileBuffer = fs.readFileSync(filePath);
-    
-    // Set headers for browser download
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.setHeader('Content-Length', fileBuffer.length);
-    
-    // Send file buffer directly
-    res.send(fileBuffer);
-    
-    // Clean up temp file after response is sent
-    try {
-      fs.unlinkSync(filePath);
-    } catch (e) {
-      console.warn('Could not delete generated file:', e.message);
+      // Read the file as buffer and stream directly (Vercel-compatible, no persistent storage)
+      const filePath = result.file_path;
+      if (!fs.existsSync(filePath)) {
+        throw new Error('Generated file not found');
+      }
+
+      const fileName = `${issueKey}_TestPlan.docx`;
+      const fileBuffer = fs.readFileSync(filePath);
+      
+      // Set headers for browser download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+      
+      // Send file buffer directly
+      res.send(fileBuffer);
+      
+      // Clean up temp file after response is sent
+      try {
+        fs.unlinkSync(filePath);
+      } catch (e) {
+        console.warn('Could not delete generated file:', e.message);
+      }
+    } catch (pythonError) {
+      // Clean up temp JSON on error
+      try {
+        fs.unlinkSync(tempJsonPath);
+      } catch (e) {
+        console.warn('Could not delete temp JSON file:', e.message);
+      }
+
+      // On Vercel, Python isn't available
+      if (process.env.VERCEL) {
+        console.log('⚠️ Running on Vercel - DOCX generation requires local Python');
+        return res.status(503).json({
+          status: 'error',
+          message: 'DOCX generation is not available on serverless environment. Python is required.',
+          suggestion: 'Deploy on a platform with Python support or run locally'
+        });
+      }
+      throw pythonError;
     }
 
   } catch (error) {
     console.error('❌ Error:', error.message);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Failed to download DOCX'
     });
   }
 });
