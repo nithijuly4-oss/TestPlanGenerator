@@ -10,6 +10,9 @@
       "maxDuration": 60
     }
   },
+  "env": {
+    "NODE_ENV": "production"
+  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -19,11 +22,24 @@
           "value": "no-cache, no-store, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
     }
   ],
   "routes": [
     {
-      "src": "/assets/(.+)",
+      "src": "/assets/(.+\\.(js|css|woff2?))",
       "dest": "/frontend/dist/assets/$1",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable"
@@ -32,10 +48,6 @@
     {
       "src": "/favicon.ico",
       "dest": "/frontend/dist/favicon.ico"
-    },
-    {
-      "src": "/index.css",
-      "dest": "/frontend/dist/index.css"
     },
     {
       "src": "/api/(.*)",
