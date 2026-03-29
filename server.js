@@ -232,6 +232,11 @@ Generate test plan with these sections (use JSON format):
 // ============================================
 async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
   try {
+    // Trim credentials
+    email = email?.trim();
+    apiToken = apiToken?.trim();
+    jiraDomain = jiraDomain?.trim();
+
     const baseUrl = jiraDomain.startsWith('http') 
       ? jiraDomain 
       : `https://${jiraDomain}.atlassian.net`;
@@ -267,6 +272,11 @@ async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
 // ============================================
 async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
   try {
+    // Trim credentials
+    email = email?.trim();
+    apiToken = apiToken?.trim();
+    jiraDomain = jiraDomain?.trim();
+
     const baseUrl = jiraDomain.startsWith('http') 
       ? jiraDomain 
       : `https://${jiraDomain}.atlassian.net`;
@@ -409,9 +419,14 @@ app.post('/api/connections/test-jira', async (req, res) => {
   try {
     console.log('🔍 Testing Jira connection...');
     
-    const email = req.body.email || process.env.JIRA_EMAIL;
-    const apiToken = req.body.apiToken || process.env.JIRA_API_TOKEN;
-    const jiraDomain = req.body.jiraDomain || process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
+    let email = req.body.email || process.env.JIRA_EMAIL;
+    let apiToken = req.body.apiToken || process.env.JIRA_API_TOKEN;
+    let jiraDomain = req.body.jiraDomain || process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
+    
+    // Trim whitespace from credentials (critical for Vercel)
+    if (email) email = email.trim();
+    if (apiToken) apiToken = apiToken.trim();
+    if (jiraDomain) jiraDomain = jiraDomain.trim();
     
     if (!email || !apiToken || !jiraDomain) {
       return res.status(400).json({
@@ -485,9 +500,14 @@ app.get('/api/connections/status', (req, res) => {
 // Fetch Jira Issue
 app.get('/api/jira/issue/:issueKey', async (req, res) => {
   try {
-    const email = process.env.JIRA_EMAIL;
-    const apiToken = process.env.JIRA_API_TOKEN;
-    const jiraDomain = process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
+    let email = process.env.JIRA_EMAIL;
+    let apiToken = process.env.JIRA_API_TOKEN;
+    let jiraDomain = process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
+
+    // Trim whitespace from credentials (critical for Vercel)
+    if (email) email = email.trim();
+    if (apiToken) apiToken = apiToken.trim();
+    if (jiraDomain) jiraDomain = jiraDomain.trim();
 
     if (!email || !apiToken || !jiraDomain) {
       console.error('❌ Jira credentials missing:', {
@@ -506,7 +526,8 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
     }
 
     console.log(`📋 Fetching Jira issue: ${req.params.issueKey}`);
-    console.log(`Domain: ${jiraDomain}`);
+    console.log(`   Domain (trimmed): ${jiraDomain}`);
+    console.log(`   Email (trimmed): ${email}`);
 
     // Try direct API call first (works on Vercel)
     try {
