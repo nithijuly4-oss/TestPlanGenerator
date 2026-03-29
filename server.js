@@ -151,6 +151,11 @@ async function createDocxDirect(issueKey, issueTitle, testPlanSections) {
     throw error;
   }
 }
+
+// ============================================
+// Helper: Generate Test Plan with GROQ (Direct API)
+// ============================================
+async function generateTestPlanDirect(issueTitle, issueDescription, acceptanceCriteria, apiKey) {
   try {
     const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     
@@ -221,6 +226,11 @@ Generate test plan with these sections (use JSON format):
     throw error;
   }
 }
+
+// ============================================
+// Helper: Fetch Jira Issue (Direct API)
+// ============================================
+async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
   try {
     const baseUrl = jiraDomain.startsWith('http') 
       ? jiraDomain 
