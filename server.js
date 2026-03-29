@@ -241,12 +241,17 @@ async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
       ? jiraDomain 
       : `https://${jiraDomain}.atlassian.net`;
     
+    // Create basic auth header manually (more reliable than axios auth object on Vercel)
+    const authString = Buffer.from(`${email}:${apiToken}`).toString('base64');
+    
     const response = await axios.get(
       `${baseUrl}/rest/api/3/myself`,
       {
-        auth: {
-          username: email,
-          password: apiToken
+        headers: {
+          'Authorization': `Basic ${authString}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'TestPlanAgent/1.0'
         },
         timeout: 8000
       }
@@ -287,18 +292,19 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
     console.log(`   Method: GET`);
     console.log(`   Auth: Basic (${email})`);
     
+    // Create basic auth header manually (more reliable than axios auth object on Vercel)
+    const authString = Buffer.from(`${email}:${apiToken}`).toString('base64');
+    
     const response = await axios.get(
       url,
       {
-        auth: {
-          username: email,
-          password: apiToken
-        },
-        timeout: 8000,
         headers: {
+          'Authorization': `Basic ${authString}`,
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'User-Agent': 'TestPlanAgent/1.0'
-        }
+        },
+        timeout: 8000
       }
     );
 
