@@ -421,6 +421,24 @@ app.get('/api/download/:fileId', async (req, res) => {
 });
 
 // ============================================
+// Serve Frontend (Static Files & SPA Routing)
+// ============================================
+const frontendDistPath = path.join(__dirname, 'frontend/dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+}
+
+// SPA - Serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'frontend/dist/index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Frontend not built. Run: npm run build');
+  }
+});
+
+// ============================================
 // Error Handling
 // ============================================
 app.use((err, req, res, next) => {
