@@ -282,11 +282,10 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       : `https://${jiraDomain}.atlassian.net`;
     
     const url = `${baseUrl}/rest/api/3/issues/${issueKey}`;
-    console.log(`📋 Making Jira request:`);
-    console.log(`   URL: ${url}`);
-    console.log(`   Email: ${email}`);
-    console.log(`   Token length: ${apiToken?.length}`);
-    console.log(`   Token preview: ${apiToken?.substring(0, 10)}...`);
+    console.log(`📋 Making Jira Issue Request:`);
+    console.log(`   Full URL: ${url}`);
+    console.log(`   Method: GET`);
+    console.log(`   Auth: Basic (${email})`);
     
     const response = await axios.get(
       url,
@@ -295,7 +294,11 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
           username: email,
           password: apiToken
         },
-        timeout: 8000
+        timeout: 8000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TestPlanAgent/1.0'
+        }
       }
     );
 
@@ -315,13 +318,12 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       assignee: issue.fields.assignee?.displayName || 'Unassigned'
     };
   } catch (error) {
-    console.error('❌ fetchJiraIssueDirect error:');
-    console.error(`   Status: ${error.response?.status}`);
-    console.error(`   StatusText: ${error.response?.statusText}`);
+    console.error('❌ fetchJiraIssueDirect FULL ERROR:');
+    console.error(`   Status: ${error.response?.status} ${error.response?.statusText}`);
+    console.error(`   Jira Error Messages:`, error.response?.data?.errorMessages);
+    console.error(`   Jira Errors:`, error.response?.data?.errors);
+    console.error(`   Full Response:`, JSON.stringify(error.response?.data));
     console.error(`   Message: ${error.message}`);
-    if (error.response?.data) {
-      console.error(`   Response Data:`, JSON.stringify(error.response.data));
-    }
     throw error;
   }
 }
