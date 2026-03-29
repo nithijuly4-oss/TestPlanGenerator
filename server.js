@@ -905,11 +905,23 @@ app.get('/api/download/:fileId', async (req, res) => {
 // ============================================
 const frontendDistPath = path.join(__dirname, 'frontend/dist');
 if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
+  app.use(express.static(frontendDistPath, {
+    maxAge: '1d',
+    etag: false
+  }));
 }
 
-// SPA - Serve index.html for all non-API routes
+// SPA - Serve index.html for all non-API, non-static routes
 app.get('*', (req, res) => {
+  // Check if the requested file exists as a static file
+  const filePath = path.join(frontendDistPath, req.path);
+  
+  // If it's a static asset request (has a file extension), don't serve index.html
+  if (path.extname(req.path)) {
+    return res.status(404).send('Not found');
+  }
+  
+  // Otherwise, serve index.html for SPA routing
   const indexPath = path.join(__dirname, 'frontend/dist/index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
