@@ -931,38 +931,53 @@ app.get('/api/download/:fileId', async (req, res) => {
 // Serve Frontend (Static Files & SPA Routing)
 // ============================================
 const frontendDistPath = path.join(__dirname, 'frontend/dist');
+const indexPath = path.join(frontendDistPath, 'index.html');
 
-// Log the path for debugging
+// Log the paths for debugging
+console.log(`\n${'='.repeat(50)}`);
+console.log(`📁 __dirname: ${__dirname}`);
 console.log(`📁 Frontend dist path: ${frontendDistPath}`);
-console.log(`✓ Frontend exists: ${fs.existsSync(frontendDistPath)}`);
+console.log(`📁 Index path: ${indexPath}`);
+console.log(`✓ Frontend dist exists: ${fs.existsSync(frontendDistPath)}`);
+console.log(`✓ Index.html exists: ${fs.existsSync(indexPath)}`);
+
+if (fs.existsSync(frontendDistPath)) {
+  const files = fs.readdirSync(frontendDistPath);
+  console.log(`📄 Files in dist:`, files.slice(0, 10).join(', '));
+}
+console.log(`${'='.repeat(50)}\n`);
 
 if (fs.existsSync(frontendDistPath)) {
   // Serve static files with correct MIME types
   app.use(express.static(frontendDistPath, {
     maxAge: '1d',
     etag: false,
-    setHeaders: (res, path) => {
-      const ext = path.substring(path.lastIndexOf('.')).toLowerCase();
+    setHeaders: (res, filepath) => {
+      const ext = path.extname(filepath).toLowerCase();
       if (mimeTypes[ext]) {
         res.setHeader('Content-Type', mimeTypes[ext]);
+        console.log(`📤 Served ${filepath.substring(filepath.lastIndexOf('/'))} with type ${mimeTypes[ext]}`);
       }
     }
   }));
+} else {
+  console.warn(`⚠️ Frontend dist directory not found!`);
 }
 
 // SPA - Serve index.html for all non-API, non-static routes
 app.get('*', (req, res) => {
   // Don't serve index.html for files with extensions (static assets)
   if (path.extname(req.path)) {
-    console.log(`⚠️ File not found: ${req.path}`);
+    console.log(`⚠️ File not found (returning 404): ${req.path}`);
     return res.status(404).send('Not found');
   }
   
   // Serve index.html for SPA navigation
-  const indexPath = path.join(__dirname, 'frontend/dist/index.html');
   if (fs.existsSync(indexPath)) {
+    console.log(`📄 Serving index.html for ${req.path}`);
     res.sendFile(indexPath);
   } else {
+    console.error(`❌ Index.html not found at ${indexPath}`);
     res.status(404).send('Frontend not built. Run: npm run build');
   }
 });
