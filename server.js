@@ -5,6 +5,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import axios from 'axios';
 
 // Load environment variables
 dotenv.config();
@@ -38,10 +39,15 @@ app.use((err, req, res, next) => {
 const connectionStates = {};
 
 // ============================================
-// Helper: Run Python Tool
+// Helper: Run Python Tool (with timeout)
 // ============================================
 function runPythonTool(toolPath, args = []) {
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      python.kill('SIGTERM');
+      reject(new Error('Python tool timeout - attempting direct API call instead'));
+    }, 10000); // 10 second timeout
+
     const python = spawn('python', [toolPath, ...args], {
       cwd: __dirname
     });
@@ -58,6 +64,7 @@ function runPythonTool(toolPath, args = []) {
     });
 
     python.on('close', (code) => {
+      clearTimeout(timeout);
       if (code === 0) {
         try {
           // Extract JSON from output
@@ -77,7 +84,90 @@ function runPythonTool(toolPath, args = []) {
         reject(new Error(`Python tool failed with code ${code}: ${stderr}`));
       }
     });
+
+    python.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(new Error(`Failed to start Python: ${err.message}`));
+    });
   });
+}
+
+// ============================================
+// Helper: Test GROQ Connection (Direct API)
+// ============================================
+async function testGroqConnectionDirect(apiKey) {
+  try {
+    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    
+    const response = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: 'Say "Connection successful" in exactly 3 words.'
+          }
+        ],
+        max_tokens: 10,
+        temperature: 0.1
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 8000
+      }
+    );
+
+    if (response.data.choices && response.data.choices[0]) {
+      return {
+        status: 'connected',
+        provider: 'groq',
+        model: model,
+        message: 'GROQ API connection successful',
+        timestamp: new Date().toISOString()
+      };
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+// ============================================
+// Helper: Test Jira Connection (Direct API)
+// ============================================
+async function testJiraConnectionDirect(email, apiToken, jiraDomain) {
+  try {
+    const baseUrl = jiraDomain.startsWith('http') 
+      ? jiraDomain 
+      : `https://${jiraDomain}.atlassian.net`;
+    
+    const response = await axios.get(
+      `${baseUrl}/rest/api/3/myself`,
+      {
+        auth: {
+          username: email,
+          password: apiToken
+        },
+        timeout: 8000
+      }
+    );
+
+    if (response.data) {
+      return {
+        status: 'connected',
+        provider: 'jira',
+        user: response.data.emailAddress,
+        displayName: response.data.displayName,
+        message: 'Jira Cloud connection successful',
+        timestamp: new Date().toISOString()
+      };
+    }
+  } catch (error) {
+    throw error;
+  }
 }
 
 // ============================================
@@ -97,24 +187,49 @@ app.get('/api/health', (req, res) => {
 app.post('/api/connections/test-llm', async (req, res) => {
   try {
     console.log('🔍 Testing LLM connection...');
-    const result = await runPythonTool(path.join(__dirname, 'tools', 'test_groq_connection.py'));
     
-    if (result.status === 'connected') {
+    const apiKey = req.body.apiKey || process.env.GROQ_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'GROQ API key not provided or configured'
+      });
+    }
+
+    // Try direct API call first (works on Vercel)
+    try {
+      const result = await testGroqConnectionDirect(apiKey);
       connectionStates.llm = {
         status: 'connected',
         model: result.model,
         timestamp: Date.now(),
-        ttl: 30 * 60 * 1000 // 30 minutes
+        ttl: 30 * 60 * 1000
       };
       console.log('✅ LLM Connected');
+      return res.json(result);
+    } catch (directError) {
+      console.log('Direct API call failed, trying Python tool...');
+      // Fallback to Python tool
+      const result = await runPythonTool(path.join(__dirname, 'tools', 'test_groq_connection.py'));
+      
+      if (result.status === 'connected') {
+        connectionStates.llm = {
+          status: 'connected',
+          model: result.model,
+          timestamp: Date.now(),
+          ttl: 30 * 60 * 1000
+        };
+        console.log('✅ LLM Connected');
+      }
+      
+      return res.json(result);
     }
-    
-    res.json(result);
   } catch (error) {
     console.error('❌ Error:', error.message);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Failed to test LLM connection'
     });
   }
 });
@@ -123,24 +238,51 @@ app.post('/api/connections/test-llm', async (req, res) => {
 app.post('/api/connections/test-jira', async (req, res) => {
   try {
     console.log('🔍 Testing Jira connection...');
-    const result = await runPythonTool(path.join(__dirname, 'tools', 'test_jira_connection.py'));
     
-    if (result.status === 'connected') {
+    const email = req.body.email || process.env.JIRA_EMAIL;
+    const apiToken = req.body.apiToken || process.env.JIRA_API_TOKEN;
+    const jiraDomain = req.body.jiraDomain || process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
+    
+    if (!email || !apiToken || !jiraDomain) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Jira credentials not provided or configured'
+      });
+    }
+
+    // Try direct API call first (works on Vercel)
+    try {
+      const result = await testJiraConnectionDirect(email, apiToken, jiraDomain);
       connectionStates.jira = {
         status: 'connected',
-        user_email: result.user_email,
+        user_email: result.user,
         timestamp: Date.now(),
-        ttl: 30 * 60 * 1000 // 30 minutes
+        ttl: 30 * 60 * 1000
       };
       console.log('✅ Jira Connected');
+      return res.json(result);
+    } catch (directError) {
+      console.log('Direct API call failed, trying Python tool...');
+      // Fallback to Python tool
+      const result = await runPythonTool(path.join(__dirname, 'tools', 'test_jira_connection.py'));
+      
+      if (result.status === 'connected') {
+        connectionStates.jira = {
+          status: 'connected',
+          user_email: result.user_email,
+          timestamp: Date.now(),
+          ttl: 30 * 60 * 1000
+        };
+        console.log('✅ Jira Connected');
+      }
+      
+      return res.json(result);
     }
-    
-    res.json(result);
   } catch (error) {
     console.error('❌ Error:', error.message);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Failed to test Jira connection'
     });
   }
 });

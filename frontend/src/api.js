@@ -9,12 +9,18 @@ export const apiClient = {
   },
 
   // Connection tests
-  async testLLMConnection() {
-    return axios.post(`${API_BASE}/connections/test-llm`)
+  async testLLMConnection(apiKey) {
+    return axios.post(`${API_BASE}/connections/test-llm`, {
+      apiKey: apiKey || undefined
+    })
   },
 
-  async testJiraConnection() {
-    return axios.post(`${API_BASE}/connections/test-jira`)
+  async testJiraConnection(email, apiToken, jiraDomain) {
+    return axios.post(`${API_BASE}/connections/test-jira`, {
+      email: email || undefined,
+      apiToken: apiToken || undefined,
+      jiraDomain: jiraDomain || undefined
+    })
   },
 
   async getConnectionStatus() {

@@ -25,7 +25,7 @@ export function ConnectionSettings() {
   const handleTestLLM = async () => {
     setLoading(true)
     try {
-      const response = await apiClient.testLLMConnection()
+      const response = await apiClient.testLLMConnection(groqKey)
       if (response.data.status === 'connected') {
         setLlmConnected(true)
         updateError(null)
@@ -44,10 +44,10 @@ export function ConnectionSettings() {
   const handleTestJira = async () => {
     setLoading(true)
     try {
-      const response = await apiClient.testJiraConnection()
+      const response = await apiClient.testJiraConnection(jiraEmail, jiraToken, jiraInstance)
       if (response.data.status === 'connected') {
         setJiraConnected(true)
-        setJiraInstance(response.data.user_email)
+        setJiraInstance(response.data.user || response.data.user_email)
         updateError(null)
       } else {
         updateError(response.data.message || 'Jira connection failed')
