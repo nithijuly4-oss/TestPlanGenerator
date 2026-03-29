@@ -1,0 +1,256 @@
+.history {
+  padding: 2rem;
+}
+
+.history.dark {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.history.light {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.history-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.history-container h3 {
+  font-size: 1.3rem;
+  margin-bottom: 2rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: rgba(100, 100, 100, 0.1);
+  border-radius: 8px;
+}
+
+.dark .empty-state {
+  background-color: #2a2a2a;
+}
+
+.light .empty-state {
+  background-color: #f5f5f5;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+}
+
+.empty-state .hint {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.history-table {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+}
+
+.dark .history-table {
+  border-color: #3a3a3a;
+}
+
+.light .history-table {
+  border-color: #ddd;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: rgba(100, 100, 100, 0.05);
+}
+
+.dark table {
+  background-color: #2a2a2a;
+}
+
+.light table {
+  background-color: #fff;
+}
+
+thead {
+  background-color: rgba(0, 123, 255, 0.1);
+  border-bottom: 2px solid #007bff;
+}
+
+.dark thead {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.light thead {
+  background-color: #f0f0f0;
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #007bff;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(100, 100, 100, 0.1);
+}
+
+.dark td {
+  border-bottom-color: #3a3a3a;
+}
+
+.light td {
+  border-bottom-color: #e0e0e0;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover {
+  background-color: rgba(100, 100, 100, 0.1);
+}
+
+.dark tr:hover {
+  background-color: #333;
+}
+
+.light tr:hover {
+  background-color: #f9f9f9;
+}
+
+.issue-key-cell {
+  font-family: 'Courier New', monospace;
+  color: #007bff;
+}
+
+.title-cell {
+  max-width: 300px;
+}
+
+.date-cell {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.status-cell {
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.badge.ready {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.dark .badge.ready {
+  background-color: #1e3a1f;
+  color: #a6ddaa;
+}
+
+.light .badge.ready {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge.expired {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.dark .badge.expired {
+  background-color: #3a1f1f;
+  color: #f5a6a6;
+}
+
+.light .badge.expired {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-small {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-download {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-download:hover {
+  background-color: #0056b3;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.text-muted {
+  opacity: 0.6;
+}
+
+.info-box {
+  background-color: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.dark .info-box {
+  background-color: rgba(0, 123, 255, 0.05);
+  border-color: rgba(0, 123, 255, 0.15);
+}
+
+.light .info-box {
+  background-color: rgba(0, 123, 255, 0.08);
+  border-color: rgba(0, 123, 255, 0.3);
+}
+
+.info-box p {
+  margin: 0.5rem 0;
+}
+
+.info-box p:first-child {
+  margin-top: 0;
+}
+
+.info-box p:last-child {
+  margin-bottom: 0;
+}
