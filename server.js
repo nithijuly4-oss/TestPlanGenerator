@@ -239,26 +239,74 @@ Generate test plan with these sections (use JSON format):
 
     if (response.data.choices && response.data.choices[0]) {
       const content = response.data.choices[0].message.content;
-      // Try to extract JSON from the response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const testPlan = JSON.parse(jsonMatch[0]);
+      
+      try {
+        // Try to extract JSON from the response
+        // Look for JSON object with proper parsing
+        let testPlan = null;
+        
+        // Try to find JSON object by counting braces
+        const firstBrace = content.indexOf('{');
+        if (firstBrace !== -1) {
+          let braceCount = 0;
+          let endIndex = -1;
+          
+          for (let i = firstBrace; i < content.length; i++) {
+            if (content[i] === '{') braceCount++;
+            else if (content[i] === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                endIndex = i + 1;
+                break;
+              }
+            }
+          }
+          
+          if (endIndex !== -1) {
+            const jsonStr = content.substring(firstBrace, endIndex);
+            try {
+              testPlan = JSON.parse(jsonStr);
+            } catch (parseErr) {
+              console.error('JSON parse error:', parseErr.message);
+              console.error('Attempted to parse:', jsonStr.substring(0, 200) + '...');
+              // Fall through to return raw content
+            }
+          }
+        }
+        
+        if (testPlan) {
+          return {
+            status: 'success',
+            test_plan: testPlan,
+            message: 'Test plan generated successfully'
+          };
+        }
+        
+        // If JSON parsing failed, return raw content
         return {
           status: 'success',
-          test_plan: testPlan,
-          message: 'Test plan generated successfully'
+          test_plan: {
+            description: content
+          },
+          message: 'Test plan generated (unstructured format)'
+        };
+      } catch (innerError) {
+        console.error('Error processing GROQ response:', innerError.message);
+        return {
+          status: 'success',
+          test_plan: {
+            description: content
+          },
+          message: 'Test plan generated (raw format)'
         };
       }
-      return {
-        status: 'success',
-        test_plan: {
-          description: content
-        },
-        message: 'Test plan generated (unstructured format)'
-      };
     }
   } catch (error) {
-    throw error;
+    console.error('❌ Error in generateTestPlanDirect:');
+    console.error(`   Message: ${error.message}`);
+    console.error(`   Status: ${error.response?.status}`);
+    
+    throw new Error(`GROQ API Error: ${error.message}`);
   }
 }
 
