@@ -1,11 +1,19 @@
 {
   "version": 2,
-  "env": [
-    "GROQ_API_KEY",
-    "JIRA_EMAIL",
-    "JIRA_API_TOKEN",
-    "JIRA_DOMAIN"
-  ],
+  "env": {
+    "GROQ_API_KEY": {
+      "description": "Your GROQ LLM API Key"
+    },
+    "JIRA_EMAIL": {
+      "description": "Your Jira Cloud Email"
+    },
+    "JIRA_API_TOKEN": {
+      "description": "Your Jira Cloud API Token"
+    },
+    "JIRA_DOMAIN": {
+      "description": "Your Jira Cloud Domain"
+    }
+  },
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
