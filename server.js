@@ -323,6 +323,30 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Debug: Check environment variables (for troubleshooting only)
+app.get('/api/debug/env', (req, res) => {
+  // Only allow in development or with a secret key
+  const secretKey = req.query.secret;
+  if (process.env.NODE_ENV === 'production' && secretKey !== process.env.DEBUG_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  
+  res.json({
+    environment: process.env.NODE_ENV,
+    vercel: !!process.env.VERCEL,
+    jira: {
+      JIRA_EMAIL: process.env.JIRA_EMAIL ? '✅ SET' : '❌ NOT SET',
+      JIRA_API_TOKEN: process.env.JIRA_API_TOKEN ? '✅ SET (length: ' + process.env.JIRA_API_TOKEN.length + ')' : '❌ NOT SET',
+      JIRA_DOMAIN: process.env.JIRA_DOMAIN ? '✅ SET: ' + process.env.JIRA_DOMAIN : '❌ NOT SET',
+      JIRA_CLOUD_URL: process.env.JIRA_CLOUD_URL ? '✅ SET: ' + process.env.JIRA_CLOUD_URL : '❌ NOT SET'
+    },
+    groq: {
+      GROQ_API_KEY: process.env.GROQ_API_KEY ? '✅ SET' : '❌ NOT SET'
+    },
+    resolved_jira_domain: process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL || 'NOT FOUND'
+  });
+});
+
 // Test LLM Connection
 app.post('/api/connections/test-llm', async (req, res) => {
   try {
