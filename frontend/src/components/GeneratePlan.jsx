@@ -312,6 +312,16 @@ export function GeneratePlan() {
                   )}
                 </>
               )}
+
+              {/* Fallback for raw text when JSON parsing fails */}
+              {testPlan.description && !(testPlan.sections || testPlan.test_plan) && (
+                <div className="section-content">
+                  <h5>📋 Test Plan (Raw Format)</h5>
+                  <p style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.9em' }}>
+                    {testPlan.description}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="export-buttons">
