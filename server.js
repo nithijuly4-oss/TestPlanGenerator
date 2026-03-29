@@ -313,11 +313,14 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
     
     return {
       status: 'found',
+      key: issue.key,
       issueKey: issue.key,
+      summary: issue.fields.summary,
       title: issue.fields.summary,
       description: issue.fields.description?.content?.[0]?.content?.[0]?.text || 
                    issue.fields.description || 
                    'No description provided',
+      acceptance_criteria: issue.fields.customfield_10028 || [],
       acceptanceCriteria: issue.fields.customfield_10028 || [],
       priority: issue.fields.priority?.name || 'Medium',
       issueStatus: issue.fields.status?.name || 'To Do',
