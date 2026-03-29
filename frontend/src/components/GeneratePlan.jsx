@@ -59,9 +59,9 @@ export function GeneratePlan() {
     setStep(2)
     try {
       const response = await apiClient.generateTestPlan(
-        issue.summary || issue.title,
+        issue.title,
         issue.description || '',
-        issue.acceptance_criteria || []
+        issue.acceptanceCriteria || []
       )
       setTestPlan(response.data)
       setStep(3)
@@ -84,7 +84,7 @@ export function GeneratePlan() {
           console.log('Using direct download endpoint...')
           const response = await apiClient.downloadDocxDirect(
             issueKey,
-            issue.summary || issue.title,
+            issue.title,
             testPlan.sections || testPlan
           )
           
@@ -109,7 +109,7 @@ export function GeneratePlan() {
         // Fallback: Create DOCX then download
         const docxResponse = await apiClient.createDocxPlan(
           issueKey,
-          issue.summary || issue.title,
+          issue.title,
           testPlan.sections || testPlan
         )
 
@@ -130,7 +130,7 @@ export function GeneratePlan() {
         // PDF export
         const docxResponse = await apiClient.createDocxPlan(
           issueKey,
-          issue.summary || issue.title,
+          issue.title,
           testPlan.sections || testPlan
         )
 
@@ -211,19 +211,24 @@ export function GeneratePlan() {
           <div className="section issue-display">
             <h3>Issue Details</h3>
             <div className="issue-card">
-              <div className="issue-key">{issue.key}</div>
-              <h4>{issue.summary || issue.title}</h4>
+              <div className="issue-key">{issue.issueKey}</div>
+              <h4>{issue.title}</h4>
               <p className="description">{issue.description || '(No description)'}</p>
-              {issue.acceptance_criteria && issue.acceptance_criteria.length > 0 && (
+              {issue.acceptanceCriteria && issue.acceptanceCriteria.length > 0 && (
                 <div className="criteria">
                   <strong>Acceptance Criteria:</strong>
                   <ul>
-                    {issue.acceptance_criteria.map((criterion, idx) => (
+                    {issue.acceptanceCriteria.map((criterion, idx) => (
                       <li key={idx}>{criterion}</li>
                     ))}
                   </ul>
                 </div>
               )}
+              <div className="issue-metadata">
+                <span><strong>Status:</strong> {issue.issueStatus}</span>
+                <span><strong>Priority:</strong> {issue.priority}</span>
+                <span><strong>Assignee:</strong> {issue.assignee}</span>
+              </div>
             </div>
 
             {step === 2 && (

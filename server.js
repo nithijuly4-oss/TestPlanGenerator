@@ -320,7 +320,7 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
                    'No description provided',
       acceptanceCriteria: issue.fields.customfield_10028 || [],
       priority: issue.fields.priority?.name || 'Medium',
-      status: issue.fields.status?.name || 'To Do',
+      issueStatus: issue.fields.status?.name || 'To Do',
       assignee: issue.fields.assignee?.displayName || 'Unassigned'
     };
   } catch (error) {
