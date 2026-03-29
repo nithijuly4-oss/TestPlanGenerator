@@ -358,21 +358,36 @@ app.post('/api/connections/test-jira', async (req, res) => {
       console.log('✅ Jira Connected');
       return res.json(result);
     } catch (directError) {
-      console.log('Direct API call failed, trying Python tool...');
-      // Fallback to Python tool
-      const result = await runPythonTool(path.join(__dirname, 'tools', 'test_jira_connection.py'));
+      console.log('Direct API call failed:', directError.message);
       
-      if (result.status === 'connected') {
-        connectionStates.jira = {
-          status: 'connected',
-          user_email: result.user_email,
-          timestamp: Date.now(),
-          ttl: 30 * 60 * 1000
-        };
-        console.log('✅ Jira Connected');
+      // On Vercel, don't try Python fallback
+      if (process.env.VERCEL) {
+        return res.status(500).json({
+          status: 'error',
+          message: directError.response?.data?.errorMessages?.[0] || 
+                   directError.message ||
+                   'Failed to connect to Jira. Please verify your credentials and domain.'
+        });
       }
       
-      return res.json(result);
+      // Fallback to Python tool for local environments
+      try {
+        const result = await runPythonTool(path.join(__dirname, 'tools', 'test_jira_connection.py'));
+        
+        if (result.status === 'connected') {
+          connectionStates.jira = {
+            status: 'connected',
+            user_email: result.user_email,
+            timestamp: Date.now(),
+            ttl: 30 * 60 * 1000
+          };
+          console.log('✅ Jira Connected via Python');
+        }
+        
+        return res.json(result);
+      } catch (pythonError) {
+        throw directError; // Throw the original error if both fail
+      }
     }
   } catch (error) {
     console.error('❌ Error:', error.message);
