@@ -281,14 +281,40 @@ export function GeneratePlan() {
                     </div>
                   )}
 
+                  {testPlan.sections.test_scenarios && testPlan.sections.test_scenarios.length > 0 && (
+                    <div className="section-content">
+                      <h5>🎯 Test Scenarios</h5>
+                      <ul>
+                        {testPlan.sections.test_scenarios.map((scenario, idx) => (
+                          <li key={idx}>{scenario}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {testPlan.sections.test_cases && testPlan.sections.test_cases.length > 0 && (
                     <div className="section-content">
                       <h5>🧪 Test Cases</h5>
                       <ul>
                         {testPlan.sections.test_cases.map((tc, idx) => (
                           <li key={idx}>
-                            <strong>{tc.title || `Test ${idx + 1}`}:</strong> {tc.steps || tc.description}
+                            {typeof tc === 'string' ? tc : (
+                              <>
+                                <strong>{tc.id || tc.title || `Test ${idx + 1}`}:</strong> {tc.title && tc.steps ? tc.steps.join(' → ') : tc.description || tc}
+                              </>
+                            )}
                           </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {testPlan.sections.edge_cases && testPlan.sections.edge_cases.length > 0 && (
+                    <div className="section-content">
+                      <h5>⚠️ Edge Cases</h5>
+                      <ul>
+                        {testPlan.sections.edge_cases.map((edgeCase, idx) => (
+                          <li key={idx}>{edgeCase}</li>
                         ))}
                       </ul>
                     </div>
@@ -305,6 +331,29 @@ export function GeneratePlan() {
                     <div className="section-content">
                       <h5>✓ Exit Criteria</h5>
                       <p>{testPlan.sections.exit_criteria}</p>
+                    </div>
+                  )}
+
+                  {testPlan.sections.automation_notes && (
+                    <div className="section-content">
+                      <h5>🤖 Automation Notes</h5>
+                      <p>{testPlan.sections.automation_notes}</p>
+                    </div>
+                  )}
+
+                  {testPlan.sections.description && !testPlan.sections.test_cases && (
+                    <div className="section-content">
+                      <h5>📝 Description</h5>
+                      <p>{testPlan.sections.description}</p>
+                    </div>
+                  )}
+
+                  {testPlan.sections.raw_response && (
+                    <div className="section-content">
+                      <h5>📝 Test Plan</h5>
+                      <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontSize: '0.9em' }}>
+                        {testPlan.sections.raw_response}
+                      </pre>
                     </div>
                   )}
                 </>

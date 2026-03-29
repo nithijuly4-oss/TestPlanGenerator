@@ -210,13 +210,13 @@ Generate test plan with these sections (use JSON format):
         const testPlan = JSON.parse(jsonMatch[0]);
         return {
           status: 'success',
-          test_plan: testPlan,
+          sections: testPlan,
           message: 'Test plan generated successfully'
         };
       }
       return {
         status: 'success',
-        test_plan: {
+        sections: {
           description: content
         },
         message: 'Test plan generated (unstructured format)'
