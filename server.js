@@ -48,6 +48,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Handle favicon requests gracefully
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content - silent response
+});
+app.get('/favicon.png', (req, res) => {
+  res.status(204).end(); // No content - silent response
+});
+
 // Error handling for JSON parsing
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
