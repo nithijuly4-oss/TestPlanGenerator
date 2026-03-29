@@ -76,6 +76,9 @@ export function GeneratePlan() {
   const handleExport = async (format) => {
     if (!testPlan) return
     
+    // Get the test plan data from either sections or test_plan property
+    const testPlanData = testPlan.sections || testPlan.test_plan || testPlan
+    
     setLoading(true)
     try {
       if (format === 'docx') {
@@ -85,7 +88,7 @@ export function GeneratePlan() {
           const response = await apiClient.downloadDocxDirect(
             issueKey,
             issue.summary || issue.title,
-            testPlan.sections || testPlan
+            testPlanData
           )
           
           const url = URL.createObjectURL(response.data)
@@ -110,7 +113,7 @@ export function GeneratePlan() {
         const docxResponse = await apiClient.createDocxPlan(
           issueKey,
           issue.summary || issue.title,
-          testPlan.sections || testPlan
+          testPlanData
         )
 
         if (!docxResponse.data || !docxResponse.data.file_id) {
@@ -131,7 +134,7 @@ export function GeneratePlan() {
         const docxResponse = await apiClient.createDocxPlan(
           issueKey,
           issue.summary || issue.title,
-          testPlan.sections || testPlan
+          testPlanData
         )
 
         if (!docxResponse.data || !docxResponse.data.file_id) {
@@ -265,27 +268,27 @@ export function GeneratePlan() {
           <div className="section test-plan-display">
             <h3>Generated Test Plan</h3>
             <div className="test-plan-card">
-              {testPlan.sections && (
+              {(testPlan.sections || testPlan.test_plan) && (
                 <>
-                  {testPlan.sections.objective && (
+                  {(testPlan.sections?.objective || testPlan.test_plan?.objective) && (
                     <div className="section-content">
                       <h5>📋 Objective</h5>
-                      <p>{testPlan.sections.objective}</p>
+                      <p>{testPlan.sections?.objective || testPlan.test_plan?.objective}</p>
                     </div>
                   )}
 
-                  {testPlan.sections.scope && (
+                  {(testPlan.sections?.scope || testPlan.test_plan?.scope) && (
                     <div className="section-content">
                       <h5>📌 Scope</h5>
-                      <p>{testPlan.sections.scope}</p>
+                      <p>{testPlan.sections?.scope || testPlan.test_plan?.scope}</p>
                     </div>
                   )}
 
-                  {testPlan.sections.test_cases && testPlan.sections.test_cases.length > 0 && (
+                  {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases) && (testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).length > 0 && (
                     <div className="section-content">
                       <h5>🧪 Test Cases</h5>
                       <ul>
-                        {testPlan.sections.test_cases.map((tc, idx) => (
+                        {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).map((tc, idx) => (
                           <li key={idx}>
                             <strong>{tc.title || `Test ${idx + 1}`}:</strong> {tc.steps || tc.description}
                           </li>
@@ -294,17 +297,17 @@ export function GeneratePlan() {
                     </div>
                   )}
 
-                  {testPlan.sections.entry_criteria && (
+                  {(testPlan.sections?.entry_criteria || testPlan.test_plan?.entry_criteria) && (
                     <div className="section-content">
                       <h5>✓ Entry Criteria</h5>
-                      <p>{testPlan.sections.entry_criteria}</p>
+                      <p>{testPlan.sections?.entry_criteria || testPlan.test_plan?.entry_criteria}</p>
                     </div>
                   )}
 
-                  {testPlan.sections.exit_criteria && (
+                  {(testPlan.sections?.exit_criteria || testPlan.test_plan?.exit_criteria) && (
                     <div className="section-content">
                       <h5>✓ Exit Criteria</h5>
-                      <p>{testPlan.sections.exit_criteria}</p>
+                      <p>{testPlan.sections?.exit_criteria || testPlan.test_plan?.exit_criteria}</p>
                     </div>
                   )}
                 </>
