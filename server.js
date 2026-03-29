@@ -13,6 +13,24 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Helper: Get proper temp directory (Vercel-compatible)
+function getTempDir() {
+  if (process.env.VERCEL) {
+    return '/tmp';
+  }
+  return path.join(__dirname, '.tmp');
+}
+
+// Ensure temp directory exists
+const tempDir = getTempDir();
+if (!fs.existsSync(tempDir)) {
+  try {
+    fs.mkdirSync(tempDir, { recursive: true });
+  } catch (e) {
+    console.warn('Could not create temp directory:', e.message);
+  }
+}
+
 const app = express();
 const PORT = process.env.APP_PORT || 3000;
 
@@ -718,8 +736,10 @@ app.post('/api/test-plan/generate', async (req, res) => {
         apiKey
       );
       console.log('✅ Test plan generated via direct API');
+      console.log('📤 Response:', JSON.stringify(result).substring(0, 200) + '...');
       return res.json(result);
     } catch (directError) {
+      console.error('❌ Direct API error:', directError.message);
       console.log('Direct API call failed, trying Python tool...');
       // Fallback to Python tool
       try {
@@ -763,14 +783,13 @@ app.post('/api/test-plan/create-docx', async (req, res) => {
     }
 
     // Save test plan sections to temp JSON file
-    const tempJsonPath = path.join(__dirname, '.tmp', `temp_plan_${Date.now()}.json`);
-    fs.mkdirSync(path.dirname(tempJsonPath), { recursive: true });
+    const tempJsonPath = path.join(getTempDir(), `temp_plan_${Date.now()}.json`);
     fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
 
     try {
       const result = await runPythonTool(
         path.join(__dirname, 'tools', 'create_docx_plan.py'),
-        [issueKey, issueTitle, tempJsonPath]
+        [issueKey, issueTitle, tempJsonPath, getTempDir()]
       );
 
       // Clean up temp JSON
@@ -844,8 +863,8 @@ app.get('/api/download/:fileId', (req, res) => {
   const { format } = req.query;
   
   const filePath = format === 'pdf' 
-    ? path.join(__dirname, '.tmp', `${fileId}.pdf`)
-    : path.join(__dirname, '.tmp', `${fileId}.docx`);
+    ? path.join(getTempDir(), `${fileId}.pdf`)
+    : path.join(getTempDir(), `${fileId}.docx`);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({
@@ -881,15 +900,14 @@ app.post('/api/test-plan/download-docx', async (req, res) => {
     console.log(`📥 Direct download DOCX for: ${issueKey}`);
 
     // Save test plan sections to temp JSON file
-    const tempJsonPath = path.join(__dirname, '.tmp', `temp_plan_${Date.now()}.json`);
-    fs.mkdirSync(path.dirname(tempJsonPath), { recursive: true });
+    const tempJsonPath = path.join(getTempDir(), `temp_plan_${Date.now()}.json`);
     fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
 
     try {
       // Generate DOCX
       const result = await runPythonTool(
         path.join(__dirname, 'tools', 'create_docx_plan.py'),
-        [issueKey, issueTitle, tempJsonPath]
+        [issueKey, issueTitle, tempJsonPath, getTempDir()]
       );
 
       // Clean up temp JSON
@@ -963,7 +981,7 @@ app.get('/api/download/:fileId', async (req, res) => {
 
     // Convert fileId to actual file path (security: validate this)
     const fileName = fileId + (format === 'pdf' ? '.pdf' : '.docx');
-    const filePath = path.join(__dirname, '.tmp', fileName);
+    const filePath = path.join(getTempDir(), fileName);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({

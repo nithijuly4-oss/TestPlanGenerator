@@ -2,7 +2,7 @@
 """
 Tool: create_docx_plan.py
 Purpose: Create DOCX test plan document with content based on LLM-generated test plan
-Usage: python tools/create_docx_plan.py <ISSUE_KEY> <ISSUE_TITLE> <JSON_FILE_PATH>
+Usage: python tools/create_docx_plan.py <ISSUE_KEY> <ISSUE_TITLE> <JSON_FILE_PATH> [TEMP_DIR]
 """
 
 import os
@@ -25,11 +25,14 @@ if sys.version_info >= (3, 7):
     except Exception:
         pass
 
+# Get temp directory from command line or use default
+TEMP_DIR = sys.argv[4] if len(sys.argv) > 4 else '.tmp'
+
 def remove_headers_footers_from_docx(docx_path):
     """Remove all headers, footers, and watermarks by stripping from DOCX XML."""
     
     # Create temp directory
-    temp_dir = f".tmp/_docx_temp_{uuid.uuid4().hex[:8]}"
+    temp_dir = os.path.join(TEMP_DIR, f"_docx_temp_{uuid.uuid4().hex[:8]}")
     os.makedirs(temp_dir, exist_ok=True)
     
     try:
@@ -228,9 +231,9 @@ def create_docx_plan(issue_key, issue_title, test_plan_sections):
                 row_cells[3].text = str(tc.get("expected_result", ""))[:100]
         
         # Step 9: Save document
-        os.makedirs(".tmp", exist_ok=True)
+        os.makedirs(TEMP_DIR, exist_ok=True)
         file_id = str(uuid.uuid4())[:8]
-        output_path = f".tmp/{file_id}.docx"
+        output_path = os.path.join(TEMP_DIR, f"{file_id}.docx")
         doc.save(output_path)
         
         # Step 10: Remove any remaining headers, footers, and watermarks
