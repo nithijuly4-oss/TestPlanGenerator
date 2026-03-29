@@ -974,6 +974,11 @@ if (fs.existsSync(frontendDistPath)) {
 
 // SPA - Serve index.html for all non-API, non-static routes
 app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
   // Don't serve index.html for files with extensions (static assets)
   if (path.extname(req.path)) {
     console.log(`⚠️ File not found (returning 404): ${req.path}`);
