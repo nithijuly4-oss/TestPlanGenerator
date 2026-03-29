@@ -286,7 +286,7 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       ? jiraDomain 
       : `https://${jiraDomain}.atlassian.net`;
     
-    const url = `${baseUrl}/rest/api/3/issues/${issueKey}`;
+    const url = `${baseUrl}/rest/api/3/issue/${issueKey}`;
     console.log(`📋 Making Jira Issue Request:`);
     console.log(`   Full URL: ${url}`);
     console.log(`   Method: GET`);
