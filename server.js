@@ -319,6 +319,12 @@ Generate test plan with these sections (use JSON format):
         };
       }
     }
+
+    // Handle case where response doesn't have expected structure
+    console.error('❌ Invalid GROQ response structure:');
+    console.error('Response:', JSON.stringify(response.data).substring(0, 500));
+    throw new Error('Invalid response structure from GROQ API');
+
   } catch (error) {
     console.error('❌ Error in generateTestPlanDirect:');
     console.error(`   Message: ${error.message}`);
