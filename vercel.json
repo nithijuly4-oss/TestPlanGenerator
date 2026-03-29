@@ -23,9 +23,16 @@
   ],
   "routes": [
     {
-      "src": "/",
-      "dest": "/server.js",
-      "methods": ["GET", "HEAD"]
+      "src": "/assets/(.*)",
+      "dest": "/frontend/dist/assets/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/frontend/dist/favicon.ico"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
     },
     {
       "src": "/(.*)",
