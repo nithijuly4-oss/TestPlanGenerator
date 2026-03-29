@@ -271,8 +271,11 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       ? jiraDomain 
       : `https://${jiraDomain}.atlassian.net`;
     
+    const url = `${baseUrl}/rest/api/3/issues/${issueKey}`;
+    console.log(`Making request to: ${url}`);
+    
     const response = await axios.get(
-      `${baseUrl}/rest/api/3/issues/${issueKey}`,
+      url,
       {
         auth: {
           username: email,
@@ -297,6 +300,12 @@ async function fetchJiraIssueDirect(issueKey, email, apiToken, jiraDomain) {
       assignee: issue.fields.assignee?.displayName || 'Unassigned'
     };
   } catch (error) {
+    console.error('fetchJiraIssueDirect error:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url
+    });
     throw error;
   }
 }
@@ -451,6 +460,15 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
     const jiraDomain = process.env.JIRA_DOMAIN || process.env.JIRA_CLOUD_URL;
 
     if (!email || !apiToken || !jiraDomain) {
+      console.error('❌ Jira credentials missing:', {
+        email: !!email,
+        apiToken: !!apiToken,
+        jiraDomain: !!jiraDomain,
+        JIRA_EMAIL: !!process.env.JIRA_EMAIL,
+        JIRA_API_TOKEN: !!process.env.JIRA_API_TOKEN,
+        JIRA_DOMAIN: !!process.env.JIRA_DOMAIN,
+        JIRA_CLOUD_URL: !!process.env.JIRA_CLOUD_URL
+      });
       return res.status(400).json({
         error: 'Jira not configured',
         message: 'Jira credentials not found in environment variables'
@@ -458,6 +476,7 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
     }
 
     console.log(`📋 Fetching Jira issue: ${req.params.issueKey}`);
+    console.log(`Domain: ${jiraDomain}`);
 
     // Try direct API call first (works on Vercel)
     try {
@@ -465,20 +484,35 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
       console.log('✅ Jira issue fetched via direct API');
       return res.json(result);
     } catch (directError) {
+      console.error('❌ Direct API error:', {
+        status: directError.response?.status,
+        statusText: directError.response?.statusText,
+        errorMessage: directError.message,
+        errorData: directError.response?.data
+      });
+
       // Handle specific Jira API errors
       if (directError.response?.status === 404) {
         console.log(`Issue not found: ${req.params.issueKey}`);
         return res.status(404).json({
           status: 'error',
-          message: `Issue ${req.params.issueKey} not found in Jira`
+          message: `Issue ${req.params.issueKey} not found in Jira. Verify the issue exists and check your Jira domain configuration.`
         });
       }
       
-      if (directError.response?.status === 401 || directError.response?.status === 403) {
-        console.log('Jira authentication failed');
+      if (directError.response?.status === 401) {
+        console.log('Jira authentication failed - Invalid credentials');
         return res.status(401).json({
           status: 'error',
-          message: 'Jira authentication failed. Please verify your credentials.'
+          message: 'Jira authentication failed. Invalid email or API token.'
+        });
+      }
+
+      if (directError.response?.status === 403) {
+        console.log('Jira access forbidden');
+        return res.status(403).json({
+          status: 'error',
+          message: 'Jira access forbidden. Your account may not have permission to access this issue.'
         });
       }
       
