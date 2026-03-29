@@ -541,6 +541,7 @@ app.get('/api/jira/issue/:issueKey', async (req, res) => {
     try {
       const result = await fetchJiraIssueDirect(req.params.issueKey, email, apiToken, jiraDomain);
       console.log('✅ Jira issue fetched via direct API');
+      console.log('📤 Returning response:', JSON.stringify(result));
       return res.json(result);
     } catch (directError) {
       console.error('Direct API error details:', {

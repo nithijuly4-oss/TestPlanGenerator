@@ -29,15 +29,21 @@ export function GeneratePlan() {
     setStep(1)
     try {
       const response = await apiClient.fetchJiraIssue(issueKey)
+      console.log('🔍 API Response:', response.data)
+      console.log('📊 Response Status:', response.data.status)
+      
       if (response.data.status === 'found') {
+        console.log('✅ Issue found:', response.data)
         setIssue(response.data)
         setStep(0) // Back to ready for generation
       } else {
+        console.warn('❌ Issue not found in response:', response.data)
         updateError(response.data.message || 'Issue not found')
         setIssue(null) // Clear issue state if not found
         setStep(0)
       }
     } catch (error) {
+      console.error('❌ Fetch error:', error)
       updateError(error.response?.data?.message || 'Failed to fetch issue')
       setIssue(null) // Clear issue state on error
       setStep(0)
