@@ -284,19 +284,6 @@ export function GeneratePlan() {
                     </div>
                   )}
 
-                  {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases) && (testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).length > 0 && (
-                    <div className="section-content">
-                      <h5>🧪 Test Cases</h5>
-                      <ul>
-                        {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).map((tc, idx) => (
-                          <li key={idx}>
-                            <strong>{tc.title || `Test ${idx + 1}`}:</strong> {tc.steps || tc.description}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
                   {(testPlan.sections?.entry_criteria || testPlan.test_plan?.entry_criteria) && (
                     <div className="section-content">
                       <h5>✓ Entry Criteria</h5>
@@ -304,10 +291,38 @@ export function GeneratePlan() {
                     </div>
                   )}
 
+                  {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases) && (testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).length > 0 && (
+                    <div className="section-content">
+                      <h5>🧪 Test Cases</h5>
+                      <ul>
+                        {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).map((tc, idx) => (
+                          <li key={idx}>
+                            <strong>{tc.title || `Test ${idx + 1}`}:</strong> {tc.steps || tc.description}
+                            {tc.expected_result && <div style={{marginTop: '5px', paddingLeft: '20px', fontSize: '0.9em'}}>Expected: {tc.expected_result}</div>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.edge_cases || testPlan.test_plan?.edge_cases) && (
+                    <div className="section-content">
+                      <h5>⚠️ Edge Cases</h5>
+                      <p>{testPlan.sections?.edge_cases || testPlan.test_plan?.edge_cases}</p>
+                    </div>
+                  )}
+
                   {(testPlan.sections?.exit_criteria || testPlan.test_plan?.exit_criteria) && (
                     <div className="section-content">
                       <h5>✓ Exit Criteria</h5>
                       <p>{testPlan.sections?.exit_criteria || testPlan.test_plan?.exit_criteria}</p>
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.automation_notes || testPlan.test_plan?.automation_notes) && (
+                    <div className="section-content">
+                      <h5>🤖 Automation Notes</h5>
+                      <p>{testPlan.sections?.automation_notes || testPlan.test_plan?.automation_notes}</p>
                     </div>
                   )}
                 </>

@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import axios from 'axios';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, UnderlineType } from 'docx';
 
 // Load environment variables
 dotenv.config();
@@ -192,15 +193,208 @@ async function testGroqConnectionDirect(apiKey) {
 }
 
 // ============================================
-// Helper: Create DOCX with python-docx (Direct Node.js)
+// Helper: Create DOCX with JavaScript (Vercel-compatible)
 // ============================================
 async function createDocxDirect(issueKey, issueTitle, testPlanSections) {
   try {
-    // For Vercel, we'll rely on the Python tool via fallback
-    // This is a placeholder for potential pure-JS implementation
-    // Currently, we need Python for DOCX creation, so we return a marker
-    throw new Error('Direct DOCX creation not implemented - using Python fallback');
+    // Ensure testPlanSections is an object
+    const testPlan = typeof testPlanSections === 'string' 
+      ? JSON.parse(testPlanSections) 
+      : testPlanSections;
+
+    // Extract test plan data
+    const objective = testPlan.objective || testPlan.sections?.objective || 'Objective not specified';
+    const scope = testPlan.scope || testPlan.sections?.scope || 'Scope not specified';
+    const entryCriteria = testPlan.entry_criteria || testPlan.sections?.entry_criteria || 'Entry criteria not specified';
+    const exitCriteria = testPlan.exit_criteria || testPlan.sections?.exit_criteria || 'Exit criteria not specified';
+    const edgeCases = testPlan.edge_cases || testPlan.sections?.edge_cases || 'No edge cases specified';
+    const automationNotes = testPlan.automation_notes || testPlan.sections?.automation_notes || 'No automation notes';
+    const testCases = testPlan.test_cases || testPlan.sections?.test_cases || [];
+
+    // Build document sections
+    const sections = [];
+
+    // Title
+    sections.push(
+      new Paragraph({
+        text: `Test Plan: ${issueTitle}`,
+        bold: true,
+        size: 28,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 }
+      })
+    );
+
+    sections.push(
+      new Paragraph({
+        text: `Issue: ${issueKey}`,
+        italics: true,
+        size: 20,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 }
+      })
+    );
+
+    // Objective
+    sections.push(
+      new Paragraph({
+        text: 'Objective',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    sections.push(
+      new Paragraph({
+        text: objective,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Scope
+    sections.push(
+      new Paragraph({
+        text: 'Scope',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    sections.push(
+      new Paragraph({
+        text: scope,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Entry Criteria
+    sections.push(
+      new Paragraph({
+        text: 'Entry Criteria',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    sections.push(
+      new Paragraph({
+        text: entryCriteria,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Test Cases
+    sections.push(
+      new Paragraph({
+        text: 'Test Cases',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+
+    if (testCases && testCases.length > 0) {
+      testCases.forEach((testCase, idx) => {
+        sections.push(
+          new Paragraph({
+            text: `${idx + 1}. ${testCase.title || 'Untitled Test'}`,
+            bold: true,
+            spacing: { before: 100, after: 50 }
+          })
+        );
+        sections.push(
+          new Paragraph({
+            text: `Steps: ${testCase.steps || 'No steps provided'}`,
+            spacing: { after: 50, before: 0, line: 240 }
+          })
+        );
+        if (testCase.expected_result) {
+          sections.push(
+            new Paragraph({
+              text: `Expected Result: ${testCase.expected_result}`,
+              spacing: { after: 100, before: 0, line: 240 }
+            })
+          );
+        }
+      });
+    } else {
+      sections.push(
+        new Paragraph({
+          text: 'No test cases defined',
+          italics: true
+        })
+      );
+    }
+
+    // Edge Cases
+    sections.push(
+      new Paragraph({
+        text: 'Edge Cases',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    sections.push(
+      new Paragraph({
+        text: edgeCases,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Exit Criteria
+    sections.push(
+      new Paragraph({
+        text: 'Exit Criteria',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    sections.push(
+      new Paragraph({
+        text: exitCriteria,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Automation Notes
+    sections.push(
+      new Paragraph({
+        text: 'Automation Notes',
+        bold: true,
+        size: 24,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    sections.push(
+      new Paragraph({
+        text: automationNotes,
+        spacing: { after: 200 }
+      })
+    );
+
+    // Create document
+    const doc = new Document({
+      sections: [{
+        children: sections
+      }]
+    });
+
+    // Generate buffer
+    const buffer = await Packer.toBuffer(doc);
+
+    // Save to temp file
+    const tempFile = path.join(getTempDir(), `${issueKey}_${Date.now()}.docx`);
+    fs.writeFileSync(tempFile, buffer);
+
+    return {
+      status: 'success',
+      file_path: tempFile,
+      message: 'DOCX created successfully'
+    };
   } catch (error) {
+    console.error('Error creating DOCX:', error.message);
     throw error;
   }
 }
@@ -218,19 +412,21 @@ Title: ${issueTitle}
 Description: ${issueDescription}
 ${acceptanceCriteria && acceptanceCriteria.length > 0 ? `Acceptance Criteria:\n${acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : ''}
 
-Generate test plan with these sections (use JSON format):
+Generate ONLY valid JSON (no markdown, no extra text) with this exact structure:
 {
-  "test_scenarios": ["scenario 1", "scenario 2", ...],
+  "objective": "Brief objective of this test plan",
+  "scope": "What is tested and what is not",
   "test_cases": [
     {
-      "id": "TC-001",
       "title": "Test case title",
-      "steps": ["step 1", "step 2", ...],
-      "expected_result": "what should happen"
+      "steps": "Step 1: Do X. Step 2: Do Y",
+      "expected_result": "Expected outcome"
     }
   ],
-  "edge_cases": ["edge case 1", ...],
-  "automation_notes": "Automation recommendations"
+  "entry_criteria": "Conditions that must be met before testing",
+  "exit_criteria": "Conditions that define test completion",
+  "edge_cases": "Edge cases and special scenarios to test",
+  "automation_notes": "Recommendations for test automation"
 }`;
 
     const response = await axios.post(
@@ -788,42 +984,47 @@ app.post('/api/test-plan/create-docx', async (req, res) => {
       });
     }
 
-    // Save test plan sections to temp JSON file
-    const tempJsonPath = path.join(getTempDir(), `temp_plan_${Date.now()}.json`);
-    fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
-
+    // Use JavaScript-based DOCX generation (works on Vercel)
     try {
-      const result = await runPythonTool(
-        path.join(__dirname, 'tools', 'create_docx_plan.py'),
-        [issueKey, issueTitle, tempJsonPath, getTempDir()]
-      );
-
-      // Clean up temp JSON
-      try {
-        fs.unlinkSync(tempJsonPath);
-      } catch (e) {
-        console.warn('Could not delete temp JSON file:', e.message);
-      }
-
+      const result = await createDocxDirect(issueKey, issueTitle, testPlanSections);
+      console.log('✅ DOCX created successfully with JavaScript');
       res.json(result);
-    } catch (pythonError) {
-      // Clean up temp JSON on error
-      try {
-        fs.unlinkSync(tempJsonPath);
-      } catch (e) {
-        console.warn('Could not delete temp JSON file:', e.message);
+    } catch (directError) {
+      console.error('❌ Direct DOCX creation failed:', directError.message);
+      
+      // Fallback to Python tool if available (local development)
+      if (!process.env.VERCEL) {
+        console.log('Attempting Python tool fallback...');
+        const tempJsonPath = path.join(getTempDir(), `temp_plan_${Date.now()}.json`);
+        fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
+
+        try {
+          const result = await runPythonTool(
+            path.join(__dirname, 'tools', 'create_docx_plan.py'),
+            [issueKey, issueTitle, tempJsonPath, getTempDir()]
+          );
+
+          // Clean up temp JSON
+          try {
+            fs.unlinkSync(tempJsonPath);
+          } catch (e) {
+            console.warn('Could not delete temp JSON file:', e.message);
+          }
+
+          return res.json(result);
+        } catch (pythonError) {
+          // Clean up temp JSON on error
+          try {
+            fs.unlinkSync(tempJsonPath);
+          } catch (e) {
+            console.warn('Could not delete temp JSON file:', e.message);
+          }
+          throw pythonError;
+        }
       }
 
-      // On Vercel, Python isn't available - this is expected
-      if (process.env.VERCEL) {
-        console.log('⚠️ Running on Vercel - DOCX generation requires local Python');
-        return res.status(503).json({
-          status: 'error',
-          message: 'DOCX generation is not available on serverless environment. Please use download-docx endpoint for streaming.',
-          alternative: 'Use POST /api/test-plan/download-docx for immediate download'
-        });
-      }
-      throw pythonError;
+      // On Vercel with no Python fallback, return the direct error
+      throw directError;
     }
   } catch (error) {
     console.error('❌ Error:', error.message);
@@ -905,29 +1106,16 @@ app.post('/api/test-plan/download-docx', async (req, res) => {
 
     console.log(`📥 Direct download DOCX for: ${issueKey}`);
 
-    // Save test plan sections to temp JSON file
-    const tempJsonPath = path.join(getTempDir(), `temp_plan_${Date.now()}.json`);
-    fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
-
+    // Use JavaScript-based DOCX generation (works on Vercel)
     try {
-      // Generate DOCX
-      const result = await runPythonTool(
-        path.join(__dirname, 'tools', 'create_docx_plan.py'),
-        [issueKey, issueTitle, tempJsonPath, getTempDir()]
-      );
-
-      // Clean up temp JSON
-      try {
-        fs.unlinkSync(tempJsonPath);
-      } catch (e) {
-        console.warn('Could not delete temp JSON file:', e.message);
-      }
+      const result = await createDocxDirect(issueKey, issueTitle, testPlanSections);
+      console.log('✅ DOCX created successfully');
 
       if (result.status !== 'success' || !result.file_path) {
         throw new Error(result.message || 'Failed to generate document');
       }
 
-      // Read the file as buffer and stream directly (Vercel-compatible, no persistent storage)
+      // Read the file as buffer and stream directly
       const filePath = result.file_path;
       if (!fs.existsSync(filePath)) {
         throw new Error('Generated file not found');
@@ -950,24 +1138,65 @@ app.post('/api/test-plan/download-docx', async (req, res) => {
       } catch (e) {
         console.warn('Could not delete generated file:', e.message);
       }
-    } catch (pythonError) {
-      // Clean up temp JSON on error
-      try {
-        fs.unlinkSync(tempJsonPath);
-      } catch (e) {
-        console.warn('Could not delete temp JSON file:', e.message);
+    } catch (directError) {
+      console.error('❌ Direct DOCX creation failed:', directError.message);
+
+      // Fallback to Python tool if available (local development)
+      if (!process.env.VERCEL) {
+        console.log('Attempting Python tool fallback...');
+        const tempJsonPath = path.join(getTempDir(), `temp_plan_${Date.now()}.json`);
+        fs.writeFileSync(tempJsonPath, JSON.stringify(testPlanSections, null, 2), 'utf-8');
+
+        try {
+          const result = await runPythonTool(
+            path.join(__dirname, 'tools', 'create_docx_plan.py'),
+            [issueKey, issueTitle, tempJsonPath, getTempDir()]
+          );
+
+          // Clean up temp JSON
+          try {
+            fs.unlinkSync(tempJsonPath);
+          } catch (e) {
+            console.warn('Could not delete temp JSON file:', e.message);
+          }
+
+          if (result.status !== 'success' || !result.file_path) {
+            throw new Error(result.message || 'Failed to generate document');
+          }
+
+          const filePath = result.file_path;
+          if (!fs.existsSync(filePath)) {
+            throw new Error('Generated file not found');
+          }
+
+          const fileName = `${issueKey}_TestPlan.docx`;
+          const fileBuffer = fs.readFileSync(filePath);
+          
+          res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          res.setHeader('Content-Length', fileBuffer.length);
+          
+          res.send(fileBuffer);
+          
+          try {
+            fs.unlinkSync(filePath);
+          } catch (e) {
+            console.warn('Could not delete generated file:', e.message);
+          }
+
+          return;
+        } catch (pythonError) {
+          try {
+            fs.unlinkSync(tempJsonPath);
+          } catch (e) {
+            console.warn('Could not delete temp JSON file:', e.message);
+          }
+          throw pythonError;
+        }
       }
 
-      // On Vercel, Python isn't available
-      if (process.env.VERCEL) {
-        console.log('⚠️ Running on Vercel - DOCX generation requires local Python');
-        return res.status(503).json({
-          status: 'error',
-          message: 'DOCX generation is not available on serverless environment. Python is required.',
-          suggestion: 'Deploy on a platform with Python support or run locally'
-        });
-      }
-      throw pythonError;
+      // On Vercel with no fallback, return the error
+      throw directError;
     }
 
   } catch (error) {
