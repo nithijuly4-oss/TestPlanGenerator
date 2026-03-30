@@ -284,45 +284,127 @@ export function GeneratePlan() {
                     </div>
                   )}
 
-                  {(testPlan.sections?.entry_criteria || testPlan.test_plan?.entry_criteria) && (
+                  {(testPlan.sections?.inclusions || testPlan.test_plan?.inclusions) && (
                     <div className="section-content">
-                      <h5>✓ Entry Criteria</h5>
-                      <p>{testPlan.sections?.entry_criteria || testPlan.test_plan?.entry_criteria}</p>
+                      <h5>✅ Inclusions</h5>
+                      <p>{testPlan.sections?.inclusions || testPlan.test_plan?.inclusions}</p>
                     </div>
                   )}
 
-                  {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases) && (testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).length > 0 && (
+                  {(testPlan.sections?.test_environments || testPlan.test_plan?.test_environments) && (
                     <div className="section-content">
-                      <h5>🧪 Test Cases</h5>
-                      <ul>
-                        {(testPlan.sections?.test_cases || testPlan.test_plan?.test_cases).map((tc, idx) => (
-                          <li key={idx}>
-                            <strong>{tc.title || `Test ${idx + 1}`}:</strong> {tc.steps || tc.description}
-                            {tc.expected_result && <div style={{marginTop: '5px', paddingLeft: '20px', fontSize: '0.9em'}}>Expected: {tc.expected_result}</div>}
-                          </li>
-                        ))}
-                      </ul>
+                      <h5>🖥️ Test Environments</h5>
+                      <p>{testPlan.sections?.test_environments || testPlan.test_plan?.test_environments}</p>
                     </div>
                   )}
 
-                  {(testPlan.sections?.edge_cases || testPlan.test_plan?.edge_cases) && (
+                  {(testPlan.sections?.defect_reporting_procedure || testPlan.test_plan?.defect_reporting_procedure) && (
                     <div className="section-content">
-                      <h5>⚠️ Edge Cases</h5>
-                      <p>{testPlan.sections?.edge_cases || testPlan.test_plan?.edge_cases}</p>
+                      <h5>🐞 Defect Reporting Procedure</h5>
+                      <p>{testPlan.sections?.defect_reporting_procedure || testPlan.test_plan?.defect_reporting_procedure}</p>
                     </div>
                   )}
 
-                  {(testPlan.sections?.exit_criteria || testPlan.test_plan?.exit_criteria) && (
+                  {(testPlan.sections?.test_strategy || testPlan.test_plan?.test_strategy) && (
                     <div className="section-content">
-                      <h5>✓ Exit Criteria</h5>
-                      <p>{testPlan.sections?.exit_criteria || testPlan.test_plan?.exit_criteria}</p>
+                      <h5>🎯 Test Strategy</h5>
+                      <p>{testPlan.sections?.test_strategy || testPlan.test_plan?.test_strategy}</p>
                     </div>
                   )}
 
-                  {(testPlan.sections?.automation_notes || testPlan.test_plan?.automation_notes) && (
+                  {(testPlan.sections?.test_schedule || testPlan.test_plan?.test_schedule) && (
                     <div className="section-content">
-                      <h5>🤖 Automation Notes</h5>
-                      <p>{testPlan.sections?.automation_notes || testPlan.test_plan?.automation_notes}</p>
+                      <h5>📅 Test Schedule</h5>
+                      <p>{testPlan.sections?.test_schedule || testPlan.test_plan?.test_schedule}</p>
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.test_deliverables || testPlan.test_plan?.test_deliverables) && (
+                    <div className="section-content">
+                      <h5>📦 Test Deliverables</h5>
+                      <p>{testPlan.sections?.test_deliverables || testPlan.test_plan?.test_deliverables}</p>
+                    </div>
+                  )}
+
+                  {((testPlan.sections?.entry_criteria_test_planning || testPlan.test_plan?.entry_criteria_test_planning) || (testPlan.sections?.exit_criteria_test_planning || testPlan.test_plan?.exit_criteria_test_planning)) && (
+                    <div className="section-content">
+                      <h5>📋 Test Planning Phase</h5>
+                      {(testPlan.sections?.entry_criteria_test_planning || testPlan.test_plan?.entry_criteria_test_planning) && (
+                        <div style={{marginBottom: '10px'}}>
+                          <strong>Entry Criteria:</strong>
+                          <p>{testPlan.sections?.entry_criteria_test_planning || testPlan.test_plan?.entry_criteria_test_planning}</p>
+                        </div>
+                      )}
+                      {(testPlan.sections?.exit_criteria_test_planning || testPlan.test_plan?.exit_criteria_test_planning) && (
+                        <div>
+                          <strong>Exit Criteria:</strong>
+                          <p>{testPlan.sections?.exit_criteria_test_planning || testPlan.test_plan?.exit_criteria_test_planning}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {((testPlan.sections?.entry_criteria_test_execution || testPlan.test_plan?.entry_criteria_test_execution) || (testPlan.sections?.exit_criteria_test_execution || testPlan.test_plan?.exit_criteria_test_execution)) && (
+                    <div className="section-content">
+                      <h5>🧪 Test Execution Phase</h5>
+                      {(testPlan.sections?.entry_criteria_test_execution || testPlan.test_plan?.entry_criteria_test_execution) && (
+                        <div style={{marginBottom: '10px'}}>
+                          <strong>Entry Criteria:</strong>
+                          <p>{testPlan.sections?.entry_criteria_test_execution || testPlan.test_plan?.entry_criteria_test_execution}</p>
+                        </div>
+                      )}
+                      {(testPlan.sections?.exit_criteria_test_execution || testPlan.test_plan?.exit_criteria_test_execution) && (
+                        <div>
+                          <strong>Exit Criteria:</strong>
+                          <p>{testPlan.sections?.exit_criteria_test_execution || testPlan.test_plan?.exit_criteria_test_execution}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {((testPlan.sections?.entry_criteria_test_closure || testPlan.test_plan?.entry_criteria_test_closure) || (testPlan.sections?.exit_criteria_test_closure || testPlan.test_plan?.exit_criteria_test_closure)) && (
+                    <div className="section-content">
+                      <h5>🔒 Test Closure Phase</h5>
+                      {(testPlan.sections?.entry_criteria_test_closure || testPlan.test_plan?.entry_criteria_test_closure) && (
+                        <div style={{marginBottom: '10px'}}>
+                          <strong>Entry Criteria:</strong>
+                          <p>{testPlan.sections?.entry_criteria_test_closure || testPlan.test_plan?.entry_criteria_test_closure}</p>
+                        </div>
+                      )}
+                      {(testPlan.sections?.exit_criteria_test_closure || testPlan.test_plan?.exit_criteria_test_closure) && (
+                        <div>
+                          <strong>Exit Criteria:</strong>
+                          <p>{testPlan.sections?.exit_criteria_test_closure || testPlan.test_plan?.exit_criteria_test_closure}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.tools || testPlan.test_plan?.tools) && (
+                    <div className="section-content">
+                      <h5>🔧 Tools</h5>
+                      <p>{testPlan.sections?.tools || testPlan.test_plan?.tools}</p>
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.risks || testPlan.test_plan?.risks) && (
+                    <div className="section-content">
+                      <h5>⚠️ Risks</h5>
+                      <p>{testPlan.sections?.risks || testPlan.test_plan?.risks}</p>
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.mitigations || testPlan.test_plan?.mitigations) && (
+                    <div className="section-content">
+                      <h5>🛡️ Mitigations</h5>
+                      <p>{testPlan.sections?.mitigations || testPlan.test_plan?.mitigations}</p>
+                    </div>
+                  )}
+
+                  {(testPlan.sections?.approvals || testPlan.test_plan?.approvals) && (
+                    <div className="section-content">
+                      <h5>✍️ Approvals</h5>
+                      <p>{testPlan.sections?.approvals || testPlan.test_plan?.approvals}</p>
                     </div>
                   )}
                 </>

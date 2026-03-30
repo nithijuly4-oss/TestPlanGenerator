@@ -202,24 +202,84 @@ async function createDocxDirect(issueKey, issueTitle, testPlanSections) {
       ? JSON.parse(testPlanSections) 
       : testPlanSections;
 
-    // Extract test plan data
-    const objective = testPlan.objective || testPlan.sections?.objective || 'Objective not specified';
-    const scope = testPlan.scope || testPlan.sections?.scope || 'Scope not specified';
-    const entryCriteria = testPlan.entry_criteria || testPlan.sections?.entry_criteria || 'Entry criteria not specified';
-    const exitCriteria = testPlan.exit_criteria || testPlan.sections?.exit_criteria || 'Exit criteria not specified';
-    const edgeCases = testPlan.edge_cases || testPlan.sections?.edge_cases || 'No edge cases specified';
-    const automationNotes = testPlan.automation_notes || testPlan.sections?.automation_notes || 'No automation notes';
-    const testCases = testPlan.test_cases || testPlan.sections?.test_cases || [];
+    // Extract all test plan data with fallbacks
+    const data = {
+      objective: testPlan.objective || testPlan.sections?.objective || 'To be defined',
+      scope: testPlan.scope || testPlan.sections?.scope || 'To be defined',
+      inclusions: testPlan.inclusions || testPlan.sections?.inclusions || 'To be defined',
+      testEnvironments: testPlan.test_environments || testPlan.sections?.test_environments || 'To be defined',
+      defectReporting: testPlan.defect_reporting_procedure || testPlan.sections?.defect_reporting_procedure || 'To be defined',
+      testStrategy: testPlan.test_strategy || testPlan.sections?.test_strategy || 'To be defined',
+      testSchedule: testPlan.test_schedule || testPlan.sections?.test_schedule || 'To be defined',
+      testDeliverables: testPlan.test_deliverables || testPlan.sections?.test_deliverables || 'To be defined',
+      entryTestPlanning: testPlan.entry_criteria_test_planning || testPlan.sections?.entry_criteria_test_planning || 'To be defined',
+      exitTestPlanning: testPlan.exit_criteria_test_planning || testPlan.sections?.exit_criteria_test_planning || 'To be defined',
+      entryTestExecution: testPlan.entry_criteria_test_execution || testPlan.sections?.entry_criteria_test_execution || 'To be defined',
+      exitTestExecution: testPlan.exit_criteria_test_execution || testPlan.sections?.exit_criteria_test_execution || 'To be defined',
+      entryTestClosure: testPlan.entry_criteria_test_closure || testPlan.sections?.entry_criteria_test_closure || 'To be defined',
+      exitTestClosure: testPlan.exit_criteria_test_closure || testPlan.sections?.exit_criteria_test_closure || 'To be defined',
+      tools: testPlan.tools || testPlan.sections?.tools || 'To be defined',
+      risks: testPlan.risks || testPlan.sections?.risks || 'To be defined',
+      mitigations: testPlan.mitigations || testPlan.sections?.mitigations || 'To be defined',
+      approvals: testPlan.approvals || testPlan.sections?.approvals || 'To be defined'
+    };
+
+    // Helper function to add a section heading
+    const addSectionHeading = (title) => {
+      return new Paragraph({
+        text: title,
+        bold: true,
+        size: 26,
+        spacing: { before: 300, after: 150 },
+        border: {
+          bottom: {
+            color: '0070C0',
+            space: 1,
+            style: 'single',
+            size: 6
+          }
+        }
+      });
+    };
+
+    // Helper function to add subsection heading
+    const addSubsectionHeading = (title) => {
+      return new Paragraph({
+        text: title,
+        bold: true,
+        size: 22,
+        spacing: { before: 150, after: 100 },
+        indent: { left: 100 }
+      });
+    };
+
+    // Helper function to add content paragraph
+    const addContent = (text) => {
+      return new Paragraph({
+        text: text || 'Not specified',
+        spacing: { after: 100 },
+        indent: { left: 100 }
+      });
+    };
 
     // Build document sections
     const sections = [];
 
-    // Title
+    // Document Title
     sections.push(
       new Paragraph({
-        text: `Test Plan: ${issueTitle}`,
+        text: 'TEST PLAN',
         bold: true,
-        size: 28,
+        size: 32,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 }
+      })
+    );
+
+    sections.push(
+      new Paragraph({
+        text: issueTitle,
+        size: 24,
         alignment: AlignmentType.CENTER,
         spacing: { after: 200 }
       })
@@ -227,152 +287,103 @@ async function createDocxDirect(issueKey, issueTitle, testPlanSections) {
 
     sections.push(
       new Paragraph({
-        text: `Issue: ${issueKey}`,
+        text: `Issue Key: ${issueKey}`,
         italics: true,
-        size: 20,
+        size: 18,
         alignment: AlignmentType.CENTER,
         spacing: { after: 400 }
       })
     );
 
-    // Objective
-    sections.push(
-      new Paragraph({
-        text: 'Objective',
-        bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
-      })
-    );
-    sections.push(
-      new Paragraph({
-        text: objective,
-        spacing: { after: 200 }
-      })
-    );
+    // 1. Objective
+    sections.push(addSectionHeading('1. Objective'));
+    sections.push(addContent(data.objective));
 
-    // Scope
-    sections.push(
-      new Paragraph({
-        text: 'Scope',
-        bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
-      })
-    );
-    sections.push(
-      new Paragraph({
-        text: scope,
-        spacing: { after: 200 }
-      })
-    );
+    // 2. Scope
+    sections.push(addSectionHeading('2. Scope'));
+    sections.push(addContent(data.scope));
 
-    // Entry Criteria
-    sections.push(
-      new Paragraph({
-        text: 'Entry Criteria',
-        bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
-      })
-    );
-    sections.push(
-      new Paragraph({
-        text: entryCriteria,
-        spacing: { after: 200 }
-      })
-    );
+    // 3. Inclusions
+    sections.push(addSectionHeading('3. Inclusions'));
+    sections.push(addContent(data.inclusions));
 
-    // Test Cases
-    sections.push(
-      new Paragraph({
-        text: 'Test Cases',
-        bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
-      })
-    );
+    // 4. Test Environments
+    sections.push(addSectionHeading('4. Test Environments'));
+    sections.push(addContent(data.testEnvironments));
 
-    if (testCases && testCases.length > 0) {
-      testCases.forEach((testCase, idx) => {
-        sections.push(
-          new Paragraph({
-            text: `${idx + 1}. ${testCase.title || 'Untitled Test'}`,
-            bold: true,
-            spacing: { before: 100, after: 50 }
-          })
-        );
-        sections.push(
-          new Paragraph({
-            text: `Steps: ${testCase.steps || 'No steps provided'}`,
-            spacing: { after: 50, before: 0, line: 240 }
-          })
-        );
-        if (testCase.expected_result) {
-          sections.push(
-            new Paragraph({
-              text: `Expected Result: ${testCase.expected_result}`,
-              spacing: { after: 100, before: 0, line: 240 }
-            })
-          );
-        }
-      });
-    } else {
-      sections.push(
-        new Paragraph({
-          text: 'No test cases defined',
-          italics: true
-        })
-      );
-    }
+    // 5. Defect Reporting Procedure
+    sections.push(addSectionHeading('5. Defect Reporting Procedure'));
+    sections.push(addContent(data.defectReporting));
 
-    // Edge Cases
-    sections.push(
-      new Paragraph({
-        text: 'Edge Cases',
-        bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
-      })
-    );
-    sections.push(
-      new Paragraph({
-        text: edgeCases,
-        spacing: { after: 200 }
-      })
-    );
+    // 6. Test Strategy
+    sections.push(addSectionHeading('6. Test Strategy'));
+    sections.push(addContent(data.testStrategy));
 
-    // Exit Criteria
-    sections.push(
-      new Paragraph({
-        text: 'Exit Criteria',
-        bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
-      })
-    );
-    sections.push(
-      new Paragraph({
-        text: exitCriteria,
-        spacing: { after: 200 }
-      })
-    );
+    // 7. Test Schedule
+    sections.push(addSectionHeading('7. Test Schedule'));
+    sections.push(addContent(data.testSchedule));
 
-    // Automation Notes
+    // 8. Test Deliverables
+    sections.push(addSectionHeading('8. Test Deliverables'));
+    sections.push(addContent(data.testDeliverables));
+
+    // 9. Entry and Exit Criteria
+    sections.push(addSectionHeading('9. Entry and Exit Criteria'));
+
+    sections.push(addSubsectionHeading('9.1 Test Planning Phase'));
     sections.push(
       new Paragraph({
-        text: 'Automation Notes',
+        text: 'Entry Criteria:',
         bold: true,
-        size: 24,
-        spacing: { before: 200, after: 100 }
+        spacing: { after: 50 },
+        indent: { left: 200 }
       })
     );
+    sections.push(addContent(data.entryTestPlanning));
     sections.push(
       new Paragraph({
-        text: automationNotes,
-        spacing: { after: 200 }
+        text: 'Exit Criteria:',
+        bold: true,
+        spacing: { after: 50 },
+        indent: { left: 200 }
       })
     );
+    sections.push(addContent(data.exitTestPlanning));
+
+    // 10. Test Execution
+    sections.push(addSectionHeading('10. Test Execution'));
+
+    sections.push(addSubsectionHeading('10.1 Entry Criteria'));
+    sections.push(addContent(data.entryTestExecution));
+
+    sections.push(addSubsectionHeading('10.2 Exit Criteria'));
+    sections.push(addContent(data.exitTestExecution));
+
+    // 11. Test Closure
+    sections.push(addSectionHeading('11. Test Closure'));
+
+    sections.push(addSubsectionHeading('11.1 Entry Criteria'));
+    sections.push(addContent(data.entryTestClosure));
+
+    sections.push(addSubsectionHeading('11.2 Exit Criteria'));
+    sections.push(addContent(data.exitTestClosure));
+
+    // 12. Tools
+    sections.push(addSectionHeading('12. Tools'));
+    sections.push(addContent(data.tools));
+
+    // 13. Risks and Mitigations
+    sections.push(addSectionHeading('13. Risks and Mitigations'));
+
+    sections.push(addSubsectionHeading('13.1 Risks'));
+    sections.push(addContent(data.risks));
+
+    sections.push(addSubsectionHeading('13.2 Mitigations'));
+    sections.push(addContent(data.mitigations));
+
+    // 14. Approvals
+    sections.push(addSectionHeading('14. Approvals'));
+    sections.push(addContent(data.approvals));
 
     // Create document
     const doc = new Document({
@@ -406,27 +417,33 @@ async function generateTestPlanDirect(issueTitle, issueDescription, acceptanceCr
   try {
     const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     
-    const prompt = `You are an expert QA engineer. Create a comprehensive test plan for the following issue:
+    const prompt = `You are an expert QA engineer. Create a comprehensive, professional test plan for the following user story/issue:
 
 Title: ${issueTitle}
 Description: ${issueDescription}
 ${acceptanceCriteria && acceptanceCriteria.length > 0 ? `Acceptance Criteria:\n${acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : ''}
 
-Generate ONLY valid JSON (no markdown, no extra text) with this exact structure:
+Generate ONLY valid JSON (no markdown, no extra text) with this EXACT structure. All sections should be filled with relevant content based on the user story:
+
 {
-  "objective": "Brief objective of this test plan",
-  "scope": "What is tested and what is not",
-  "test_cases": [
-    {
-      "title": "Test case title",
-      "steps": "Step 1: Do X. Step 2: Do Y",
-      "expected_result": "Expected outcome"
-    }
-  ],
-  "entry_criteria": "Conditions that must be met before testing",
-  "exit_criteria": "Conditions that define test completion",
-  "edge_cases": "Edge cases and special scenarios to test",
-  "automation_notes": "Recommendations for test automation"
+  "objective": "Brief statement of the test plan's purpose and goals",
+  "scope": "Features included in testing scope",
+  "inclusions": "Specific functionalities and features to be tested",
+  "test_environments": "Description of test environment setup (browsers, devices, databases, etc.)",
+  "defect_reporting_procedure": "Process for reporting and tracking defects",
+  "test_strategy": "Overall testing approach and methodology (unit, integration, system, UAT, etc.)",
+  "test_schedule": "Timeline for test planning, execution, and completion phases",
+  "test_deliverables": "Documents and artifacts to be delivered (test cases, reports, etc.)",
+  "entry_criteria_test_planning": "Conditions that must be met before test planning starts",
+  "exit_criteria_test_planning": "Conditions that must be met to complete test planning phase",
+  "entry_criteria_test_execution": "Conditions required before test execution can begin",
+  "exit_criteria_test_execution": "Conditions that must be met to complete test execution",
+  "entry_criteria_test_closure": "Conditions required before test closure activities",
+  "exit_criteria_test_closure": "Conditions that must be met for project closure",
+  "tools": "Testing tools and frameworks to be used (Selenium, JMeter, etc.)",
+  "risks": "Potential risks that could impact testing",
+  "mitigations": "Mitigation strategies for identified risks",
+  "approvals": "Stakeholders and sign-off requirements"
 }`;
 
     const response = await axios.post(
